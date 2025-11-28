@@ -1,0 +1,55 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: mydb
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - app-net
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: ../Dockerfile.backend
+    container_name: backend
+    restart: always
+    env_file:
+      - ./backend/.env
+    depends_on:
+      - postgres
+    ports:
+      - "3000:3000"
+    networks:
+      - app-net
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: ../Dockerfile.frontend
+    container_name: frontend
+    restart: always
+    ports:
+      - "5173:5173"
+    networks:
+      - app-net
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+
+networks:
+  app-net:
+
+volumes:
+  postgres-data:
