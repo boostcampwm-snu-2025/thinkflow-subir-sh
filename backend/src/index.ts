@@ -1,22 +1,16 @@
 import express from "express";
-import { prisma } from "./prisma.js"
+import swaggerUi from "swagger-ui-express";
+import { swaggerSpec } from "./swagger.js";
+import itemsRouter from "./items/items.route.js";
+
 const app = express();
+const PORT = 3000;
 
 app.use(express.json());
+app.use("/items", itemsRouter);
 
-app.get("/users", async (req, res) => {
-  const users = await prisma.user.findMany();
-  res.json(users);
-});
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-app.post("/users", async (req, res) => {
-  const { email, name } = req.body;
-  const newUser = await prisma.user.create({
-    data: { email, name },
-  });
-  res.json(newUser);
-});
-
-app.listen(3000, () => {
+app.listen(PORT, () => {
   console.log("Server running on http://localhost:3000");
 });
