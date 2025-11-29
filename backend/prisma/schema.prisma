@@ -7,9 +7,66 @@ datasource db {
   provider = "postgresql"
 }
 
-model User {
+model Item {
+  id        Int       @id @default(autoincrement())
+  type      ItemType
+  title     String
+  content   String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  taskDetail TaskDetail?
+  comments   Comment[]
+  tags       ItemTag[]
+}
+
+model TaskDetail {
+  // 1:1 관계 → itemId = PK + FK
+  itemId     Int      @id
+  dueDate    DateTime?
+  isDone     Boolean  @default(false)
+  repeatUnit String?  // 필요하면 enum으로 변경 가능
+  priority   Priority?
+
+  item       Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+}
+
+model Tag {
+  id    Int      @id @default(autoincrement())
+  name  String
+  color String
+  items ItemTag[]
+}
+
+model ItemTag {
+  itemId Int
+  tagId  Int
+
+  item   Item @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  tag    Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([itemId, tagId])      // 복합 PK
+  @@index([tagId])
+}
+
+model Comment {
   id        Int      @id @default(autoincrement())
-  email     String   @unique
-  name      String?
+  itemId    Int
+  content   String
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  item      Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+}
+
+enum ItemType {
+  MEMO
+  TASK
+  POST
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
 }
