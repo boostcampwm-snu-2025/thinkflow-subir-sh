@@ -52,6 +52,14 @@ router.patch("/:id", itemsController.update);
 router.delete("/:id", itemsController.delete);
 
 /**
+ * @openapi
+ * /items/{id}/tags:
+ *   get:
+ *     summary: Get tags for a specific item
+ */
+router.get("/:id/tags", itemsController.getTags);
+
+/**
  * TASK DETAIL ROUTES
  * /items/:id/task-detail
  */

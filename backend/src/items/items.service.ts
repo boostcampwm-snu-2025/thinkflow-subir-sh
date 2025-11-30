@@ -3,7 +3,7 @@ import { ItemType } from "../generated/enums.js";
 // 이렇게 해야 하나...? @prisma/client로 안되나
 
 export const itemService = {
-  getAll() {
+  async getAll() {
     return prisma.item.findMany({
       include: {
         taskDetail: true,
@@ -13,7 +13,7 @@ export const itemService = {
     });
   },
 
-  getById(id: number) {
+  async getById(id: number) {
     return prisma.item.findUnique({
       where: { id },
       include: {
@@ -24,7 +24,7 @@ export const itemService = {
     });
   },
 
-  create(data: {
+  async create(data: {
     type: ItemType;
     title: string;
     content?: string | null;
@@ -34,16 +34,25 @@ export const itemService = {
     });
   },
 
-  update(id: number, data: Partial<{ title: string; content: string }>) {
+  async update(id: number, data: Partial<{ title: string; content: string }>) {
     return prisma.item.update({
       where: { id },
       data,
     });
   },
 
-  delete(id: number) {
+  async delete(id: number) {
     return prisma.item.delete({
       where: { id },
     });
   },
+
+  async getTags(itemId: number) {
+  return prisma.itemTag.findMany({
+    where: { itemId },
+    include: {
+      tag: true,
+    },
+  });
+}
 };

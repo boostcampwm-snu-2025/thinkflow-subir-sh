@@ -32,4 +32,10 @@ export const itemsController = {
     await itemService.delete(id);
     res.status(204).send();
   },
+
+  async getTags(req: Request, res: Response) {
+    const itemId = Number(req.params.id);
+    const tags = await itemService.getTags(itemId);
+    res.json(tags.map(t => t.tag));  // tag만 반환
+  },
 };
