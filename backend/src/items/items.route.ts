@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { prisma } from "../prisma.js";
+import { itemsController } from "./items.controller.js";
 
 const router = Router();
 
@@ -10,11 +10,40 @@ const router = Router();
  *     summary: Get all items
  *     responses:
  *       200:
- *         description: OK
+ *         description: Success
  */
-router.get("/", async (req, res) => {
-  const items = await prisma.item.findMany();
-  res.json(items);
-});
+router.get("/", itemsController.getAll);
+
+/**
+ * @openapi
+ * /items/{id}:
+ *   get:
+ *     summary: Get item by ID
+ */
+router.get("/:id", itemsController.getById);
+
+/**
+ * @openapi
+ * /items:
+ *   post:
+ *     summary: Create a new item
+ */
+router.post("/", itemsController.create);
+
+/**
+ * @openapi
+ * /items/{id}:
+ *   patch:
+ *     summary: Update an item
+ */
+router.patch("/:id", itemsController.update);
+
+/**
+ * @openapi
+ * /items/{id}:
+ *   delete:
+ *     summary: Delete an item
+ */
+router.delete("/:id", itemsController.delete);
 
 export default router;
