@@ -23,7 +23,13 @@ router.get("/", itemsController.getAll);
  * @openapi
  * /items/{id}:
  *   get:
- *     summary: Get item by ID
+ *     summary: Get an item by ID
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
  */
 router.get("/:id", itemsController.getById);
 
@@ -32,6 +38,18 @@ router.get("/:id", itemsController.getById);
  * /items:
  *   post:
  *     summary: Create a new item
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *               type:
+ *                 type: string
+ *                 enum: [memo, task, post]
  */
 router.post("/", itemsController.create);
 
@@ -68,7 +86,16 @@ router.get("/:id/tags", itemsController.getTags);
  * @openapi
  * /items/{id}/task-detail:
  *   get:
- *     summary: Get task detail for specific item
+ *     summary: Get task detail for an item
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: OK
  */
 router.get("/:id/task-detail", taskDetailController.get);
 
