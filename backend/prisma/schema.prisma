@@ -7,6 +7,17 @@ datasource db {
   provider = "postgresql"
 }
 
+model User {
+  id    Int    @id @default(autoincrement())
+  email String @unique
+  name  String?
+  // password는 다른 relation에서 관리 예정 (넣는다면...)
+
+  items    Item[]
+  tags     Tag[]
+  comments Comment[]
+}
+
 model Item {
   id        Int       @id @default(autoincrement())
   type      ItemType
@@ -14,6 +25,9 @@ model Item {
   content   String?
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+
+  userId    Int
+  user      User      @relation(fields: [userId], references: [id])
 
   taskDetail TaskDetail?
   comments   Comment[]
@@ -35,6 +49,10 @@ model Tag {
   id    Int      @id @default(autoincrement())
   name  String
   color String
+
+  userId    Int
+  user      User      @relation(fields: [userId], references: [id])
+
   items ItemTag[]
 }
 
@@ -55,6 +73,9 @@ model Comment {
   content   String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  userId    Int
+  user      User      @relation(fields: [userId], references: [id])
 
   item      Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
 }

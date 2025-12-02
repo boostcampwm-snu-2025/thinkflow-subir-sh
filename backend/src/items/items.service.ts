@@ -29,8 +29,12 @@ export const itemService = {
     title: string;
     content?: string | null;
   }) {
+    const userId = 1; // @TODO: 이렇게 하면 안됨! 
     return prisma.item.create({
-      data,
+      data: {
+        ...data,
+        userId,
+      },
     });
   },
 
