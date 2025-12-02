@@ -19,7 +19,14 @@ export const tagsService = {
   },
 
   create(data: { name: string; color: string }) {
-    return prisma.tag.create({ data });
+    const userId = 1; // @TODO
+
+    return prisma.tag.create({
+      data: {
+        ...data,
+        userId,
+      },
+    });
   },
 
   update(id: number, data: Partial<{ name: string; color: string }>) {

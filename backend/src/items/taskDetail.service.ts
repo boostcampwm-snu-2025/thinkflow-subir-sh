@@ -1,5 +1,6 @@
 import { prisma } from "../prisma/index.js";
-import { Priority } from "../generated/enums.js";
+import { TaskStatus, Priority } from "../generated/enums.js";
+import type { RepeatRule } from "../../../shared/types/repeatRule.js";
 
 export const taskDetailService = {
   async get(itemId: number) {
@@ -10,7 +11,8 @@ export const taskDetailService = {
 
   async create(itemId: number, data: {
     dueDate?: Date | null;
-    repeatUnit?: string | null;
+    status?: TaskStatus;
+    repeatRule?: RepeatRule;
     priority?: Priority | null;
   }) {
     return prisma.taskDetail.create({
@@ -23,13 +25,15 @@ export const taskDetailService = {
 
   async update(itemId: number, data: Partial<{
     dueDate: Date | null;
-    isDone: boolean;
-    repeatUnit: string | null;
+    status?: TaskStatus;
+    repeatRule?: RepeatRule;
     priority: Priority | null;
   }>) {
     return prisma.taskDetail.update({
       where: { itemId },
-      data,
+      data: {
+        ...data,
+      },
     });
   },
 

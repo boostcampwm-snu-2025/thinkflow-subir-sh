@@ -1,6 +1,6 @@
 import { prisma } from "../prisma/index.js";
 import { ItemType } from "../generated/enums.js"; 
-// 이렇게 해야 하나...? @prisma/client로 안되나
+import type { ItemListQuery } from "./items.types.js";
 
 export const itemService = {
   async getAll() {
@@ -11,6 +11,56 @@ export const itemService = {
         comments: true,
       },
     });
+  },
+
+  async getList(params: ItemListQuery) {
+    const { page, limit, sort, order, type, tag, q } = params;
+
+    const where: any = {};
+
+    // type 필터
+    if (type) where.type = type;
+
+    // 검색
+    if (q) {
+      where.OR = [
+        { title: { contains: q, mode: "insensitive" } },
+        { content: { contains: q, mode: "insensitive" } },
+      ];
+    }
+
+    // 태그 필터 (N:N)
+    if (tag) {
+      where.tags = {
+        some: { tagId: tag },
+      };
+    }
+
+    const total = await prisma.item.count({ where });
+
+    const data = await prisma.item.findMany({
+      where,
+      orderBy: {
+        [sort]: order,
+      },
+      skip: (page - 1) * limit,
+      take: limit,
+      include: {
+        taskDetail: true,
+        tags: { include: { tag: true } },
+        comments: true,
+      },
+    });
+
+    return {
+      data,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   },
 
   async getById(id: number) {
@@ -29,8 +79,12 @@ export const itemService = {
     title: string;
     content?: string | null;
   }) {
+    const userId = 1; // @TODO: 이렇게 하면 안됨! 
     return prisma.item.create({
-      data,
+      data: {
+        ...data,
+        userId,
+      },
     });
   },
 

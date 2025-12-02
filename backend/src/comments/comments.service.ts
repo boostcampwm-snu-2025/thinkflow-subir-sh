@@ -15,10 +15,12 @@ export const commentsService = {
   },
 
   async create(itemId: number, data: { content: string }) {
+    const userId = 1; // @TODO
     return prisma.comment.create({
       data: {
         itemId,
         content: data.content,
+        userId,
       },
     });
   },

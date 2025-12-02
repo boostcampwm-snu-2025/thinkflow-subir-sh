@@ -7,6 +7,17 @@ datasource db {
   provider = "postgresql"
 }
 
+model User {
+  id    Int    @id @default(autoincrement())
+  email String @unique
+  name  String?
+  // password는 다른 relation에서 관리 예정 (넣는다면...)
+
+  items    Item[]
+  tags     Tag[]
+  comments Comment[]
+}
+
 model Item {
   id        Int       @id @default(autoincrement())
   type      ItemType
@@ -14,6 +25,9 @@ model Item {
   content   String?
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+
+  userId    Int
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   taskDetail TaskDetail?
   comments   Comment[]
@@ -24,8 +38,8 @@ model TaskDetail {
   // 1:1 관계 → itemId = PK + FK
   itemId     Int      @id
   dueDate    DateTime?
-  isDone     Boolean  @default(false)
-  repeatUnit String?  // 필요하면 enum으로 변경 가능
+  status     TaskStatus @default(READY)
+  repeatRule Json?
   priority   Priority?
 
   item       Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
@@ -35,6 +49,10 @@ model Tag {
   id    Int      @id @default(autoincrement())
   name  String
   color String
+
+  userId    Int
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   items ItemTag[]
 }
 
@@ -56,6 +74,9 @@ model Comment {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  userId    Int
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   item      Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
 }
 
@@ -69,4 +90,11 @@ enum Priority {
   LOW
   MEDIUM
   HIGH
+}
+
+enum TaskStatus {
+  READY
+  IN_PROGRESS
+  DONE
+  PENDING
 }
