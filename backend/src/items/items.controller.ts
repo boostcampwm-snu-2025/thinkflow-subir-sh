@@ -1,4 +1,6 @@
 import type { Request, Response } from "express";
+import { ItemType } from "../generated/client.js";
+import type { ItemListQuery, ItemSortableField, SortOrder } from "./items.types.js";
 import { itemService } from "./items.service.js";
 import { success, fail } from "../utils/response.js";
 
@@ -6,6 +8,32 @@ export const itemsController = {
   async getAll(req: Request, res: Response) {
     const items = await itemService.getAll();
     res.json(success(items));
+  },
+
+  async getList(req: Request, res: Response) {
+    const {
+      page = "1",
+      limit = "20",
+      sort = "createdAt",
+      order = "desc",
+      type,
+      tag,
+      q,
+    } = req.query;
+
+    const query: ItemListQuery = {
+      page: Number(page),
+      limit: Number(limit),
+      sort: sort as ItemSortableField,
+      order: order as SortOrder,
+      type: typeof type === "string" ? (type as ItemType) : undefined,
+      tag: tag ? Number(tag) : undefined,
+      q: q ? String(q) : undefined,
+    };
+
+    const result = await itemService.getList(query);
+
+    res.json(success(result.data, result.meta));
   },
 
   async getById(req: Request, res: Response) {
