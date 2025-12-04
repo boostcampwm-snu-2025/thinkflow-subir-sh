@@ -1,7 +1,7 @@
 function App() {
   return (
     <>
-      <p>Test!!!!!!!!!!!!!!!!</p>
+      <p className="text-3xl font-bold text-blue-500">Test!!!!!!!!!!!!!!!!</p>
     </>
   )
 }
