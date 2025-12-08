@@ -1,1 +1,5 @@
 @import "tailwindcss";
+
+html {
+  overflow-y: scroll; /* 검색 시 아이템 양 차이 때문에 스크롤 생성/삭제로 레이아웃 흔들림 방지 */
+}
