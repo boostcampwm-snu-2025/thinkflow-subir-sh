@@ -88,7 +88,7 @@ export const itemService = {
     });
   },
 
-  async update(id: number, data: Partial<{ title: string; content: string }>) {
+  async update(id: number, data: Partial<{ title: string; content: string; type: ItemType }>) {
     return prisma.item.update({
       where: { id },
       data,

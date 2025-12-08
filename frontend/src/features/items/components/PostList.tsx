@@ -1,4 +1,4 @@
-import type { Item } from '../../../shared/types';
+import type { Item, ItemType } from '../../../shared/types';
 import { PostCard } from './PostCard.js';
 
 interface PostListProps {
@@ -6,7 +6,8 @@ interface PostListProps {
   onUpdate: (input: {
     id: number;
     title?: string;
-    content?: string;
+    content?: string | null;
+    type: ItemType;
   }) => void;
   onDelete: (id: number) => void;
   isUpdating: boolean;
