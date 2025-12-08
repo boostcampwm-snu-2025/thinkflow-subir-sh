@@ -28,11 +28,12 @@ async function request<T>(
     ...options,
   });
 
+  // 204 No Content면 여기서 바로 종료
+  if (res.status === 204) {
+    return undefined as T;
+  }
+
   if (!res.ok) {
-    // 204 No Content면 여기서 바로 종료
-    if (res.status === 204) {
-      return undefined as T;
-    }
     throw new Error(`HTTP ${res.status}`);
   }
 

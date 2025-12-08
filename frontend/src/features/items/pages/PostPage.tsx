@@ -61,84 +61,55 @@ export function PostPage() {
 
   return (
     <div className="min-h-screen bg-slate-100">
-      <div className="mx-auto max-w-5xl px-4 py-6">
-        {/* 상단 탭 / 헤더 영역 */}
-        <div className="mb-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">
-              브레인스토밍 투두 리스트
-            </h1>
-            <p className="text-sm text-slate-500">
-              아이디어부터 태스크까지, 모든 것을 한 곳에서
-            </p>
-          </div>
+      {/* 메인 카드(헤더 + 빠른 메모 입력) */}
+      <div className="mb-6 rounded-2xl bg-white p-4 shadow-sm md:p-6">
+        <PostHeader
+          searchText={searchText}
+          onSearchChange={setSearchText}
+          aiCount={0}
+          onClickNewPost={handleCreatePost}
+        />
 
-          <div className="flex gap-2 rounded-full bg-slate-200 p-1 text-sm">
-            <button
-              type="button"
-              className="rounded-full px-4 py-1 text-slate-500"
-            >
-              Tasks
-            </button>
-            <button
-              type="button"
-              className="rounded-full bg-white px-4 py-1 font-semibold text-slate-900 shadow-sm"
-            >
-              Posts &amp; Memos
-            </button>
-          </div>
-        </div>
-
-        {/* 메인 카드(헤더 + 빠른 메모 입력) */}
-        <div className="mb-6 rounded-2xl bg-white p-4 shadow-sm md:p-6">
-          <PostHeader
-            searchText={searchText}
-            onSearchChange={setSearchText}
-            aiCount={0}
-            onClickNewPost={handleCreatePost}
+        <div className="mt-4">
+          <QuickMemoInput
+            isSubmitting={createItem.isPending}
+            onCreate={handleCreateQuickMemo}
           />
+        </div>
+      </div>
 
-          <div className="mt-4">
-            <QuickMemoInput
-              isSubmitting={createItem.isPending}
-              onCreate={handleCreateQuickMemo}
-            />
-          </div>
+      {/* 리스트 영역 */}
+      <div className="rounded-2xl bg-white p-4 shadow-sm md:p-6">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-lg font-semibold">메모 &amp; 포스트</h2>
+          {isLoading && (
+            <span className="text-xs text-slate-400">
+              불러오는 중...
+            </span>
+          )}
         </div>
 
-        {/* 리스트 영역 */}
-        <div className="rounded-2xl bg-white p-4 shadow-sm md:p-6">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-lg font-semibold">메모 &amp; 포스트</h2>
-            {isLoading && (
-              <span className="text-xs text-slate-400">
-                불러오는 중...
-              </span>
-            )}
+        {error && (
+          <div className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+            데이터를 가져오는 중 에러가 발생했어요.
           </div>
+        )}
 
-          {error && (
-            <div className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
-              데이터를 가져오는 중 에러가 발생했어요.
-            </div>
-          )}
+        {!isLoading && filteredItems.length === 0 && (
+          <div className="rounded-lg border border-dashed border-slate-300 px-4 py-8 text-center text-sm text-slate-500">
+            조건에 맞는 메모/포스트가 없어요. 새로 하나 만들어볼까요?
+          </div>
+        )}
 
-          {!isLoading && filteredItems.length === 0 && (
-            <div className="rounded-lg border border-dashed border-slate-300 px-4 py-8 text-center text-sm text-slate-500">
-              조건에 맞는 메모/포스트가 없어요. 새로 하나 만들어볼까요?
-            </div>
-          )}
-
-          {filteredItems.length > 0 && (
-            <PostList
-              items={filteredItems}
-              onUpdate={(payload) => updateItem.mutate(payload)}
-              onDelete={(id) => deleteItem.mutate({ id })}
-              isUpdating={updateItem.isPending}
-              isDeleting={deleteItem.isPending}
-            />
-          )}
-        </div>
+        {filteredItems.length > 0 && (
+          <PostList
+            items={filteredItems}
+            onUpdate={(payload) => updateItem.mutate(payload)}
+            onDelete={(id) => deleteItem.mutate({ id })}
+            isUpdating={updateItem.isPending}
+            isDeleting={deleteItem.isPending}
+          />
+        )}
       </div>
     </div>
   );
