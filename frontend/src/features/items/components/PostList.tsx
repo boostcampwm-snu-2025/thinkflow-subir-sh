@@ -12,6 +12,7 @@ interface PostListProps {
   onDelete: (id: number) => void;
   isUpdating: boolean;
   isDeleting: boolean;
+  onEditTags: (item: Item) => void;
 }
 
 export function PostList({
@@ -20,6 +21,7 @@ export function PostList({
   onDelete,
   isUpdating,
   isDeleting,
+  onEditTags,
 }: PostListProps) {
   return (
     <div className="grid gap-4 md:grid-cols-2">
@@ -31,6 +33,7 @@ export function PostList({
           onDelete={onDelete}
           isUpdating={isUpdating}
           isDeleting={isDeleting}
+          onEditTags={onEditTags}
         />
       ))}
     </div>

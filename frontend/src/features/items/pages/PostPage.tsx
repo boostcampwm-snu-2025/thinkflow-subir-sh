@@ -14,6 +14,7 @@ import { PostHeader } from '../components/PostHeader.js';
 import { PostList } from '../components/PostList.js';
 import { TagEditModal } from "../../tags/components/TagEditModal";
 import { TagDeleteModal } from "../../tags/components/TagDeleteModal";
+import { ItemTagSelectModal } from "../components/ItemTagSelectModal.js";
 
 export function PostPage() {
   const [searchText, setSearchText] = useState('');
@@ -35,7 +36,8 @@ export function PostPage() {
   const [tagModalMode, setTagModalMode] = useState<"create" | "edit" | null>(null);
   const [tagModalTarget, setTagModalTarget] = useState<Tag | undefined>();
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-
+  const [tagTargetItem, setTagTargetItem] = useState<Item | null>(null);
+  
   const openCreateTag = () => {
     setTagModalMode("create");
     setTagModalTarget(undefined);
@@ -67,6 +69,14 @@ export function PostPage() {
         ? prev.filter((id) => id !== tagId)
         : [...prev, tagId],
     );
+  };
+
+  const handleOpenTagModal = (item: Item) => {
+    setTagTargetItem(item);
+  };
+
+  const handleCloseTagModal = () => {
+    setTagTargetItem(null);
   };
 
   const filteredItems: Item[] = useMemo(() => {
@@ -171,6 +181,7 @@ export function PostPage() {
             onDelete={(id) => deleteItem.mutate({ id })}
             isUpdating={updateItem.isPending}
             isDeleting={deleteItem.isPending}
+            onEditTags={handleOpenTagModal}
           />
         )}
       </div>
@@ -215,6 +226,13 @@ export function PostPage() {
         }}
       />
 
+      {/* 아이템 태그 편집 모달 */}
+      <ItemTagSelectModal
+        open={tagTargetItem !== null}
+        item={tagTargetItem}
+        allTags={tags}
+        onClose={handleCloseTagModal}
+      />
     </div>
   );
 }

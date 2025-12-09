@@ -14,6 +14,7 @@ interface PostCardProps {
   onDelete: (id: number) => void;
   isUpdating: boolean;
   isDeleting: boolean;
+  onEditTags: (item: Item) => void;
 }
 
 export function PostCard({
@@ -22,6 +23,7 @@ export function PostCard({
   onDelete,
   isUpdating,
   isDeleting,
+  onEditTags,
 }: PostCardProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(item.title);
@@ -60,18 +62,27 @@ export function PostCard({
 
   return (
     <article className="flex h-full flex-col rounded-2xl border border-slate-100 bg-slate-50 p-4 shadow-sm">
-      {/* 상단 타입 표시 */}
       <div className="mb-2 flex items-center justify-between">
-        <span
-          className={clsx(
-            "inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-semibold",
-            item.type === "MEMO"
-              ? "bg-amber-100 text-amber-800"
-              : "bg-indigo-100 text-indigo-800"
-          )}
-        >
-          {item.type === "MEMO" ? "메모" : "포스트"}
-        </span>
+        {/* 태그 칩들 */}
+        <div className="flex flex-wrap gap-1">
+            {item.tags?.map((it) => (
+            <span
+                key={it.tagId}
+                style={{ backgroundColor: it.tag!.color }}
+                className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium text-white"
+            >
+                {it.tag!.name}
+            </span>
+            ))}
+
+            <button
+                type="button"
+                onClick={() => onEditTags(item)}
+                className="inline-flex items-center rounded-full border border-dashed border-slate-300 px-2 py-0.5 text-[10px] text-slate-500 hover:bg-slate-100"
+            >
+            + 태그
+            </button>
+        </div>
 
         {/* 수정/삭제 버튼 (아이콘) */}
         {!isEditing && (

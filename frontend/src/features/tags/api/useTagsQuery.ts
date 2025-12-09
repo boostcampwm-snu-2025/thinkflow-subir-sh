@@ -58,3 +58,25 @@ export function useDeleteTagMutation() {
     },
   });
 }
+
+export function useAddTagToItem() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ itemId, tagId }: { itemId: number; tagId: number }) =>
+      apiPost(`/tags/item/${itemId}/${tagId}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: itemsQueryKey });
+    },
+  });
+}
+
+export function useRemoveTagFromItem() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ itemId, tagId }: { itemId: number; tagId: number }) =>
+      apiDelete(`/tags/item/${itemId}/${tagId}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: itemsQueryKey });
+    },
+  });
+}
