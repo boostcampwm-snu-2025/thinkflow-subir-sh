@@ -1,7 +1,7 @@
 import type { ChangeEvent } from "react";
 import clsx from "clsx";
 import type { Tag } from "../../../shared/types";
-import { TagFilterBar } from "../../tags/components/TagFilterBar";
+import { TagBar } from "../../tags/components/TagBar";
 import { QuickMemoInput } from "./QuickMemoInput";
 
 interface PostHeaderProps {
@@ -11,6 +11,10 @@ interface PostHeaderProps {
   tags: Tag[];
   selectedTagIds: number[];
   onToggleTag: (tagId: number) => void;
+
+  onRequestCreateTag: () => void;
+  onRequestEditTag: (tag: Tag) => void;
+  onRequestDeleteTag: (tag: Tag) => void;
 
   quickMemoSubmitting: boolean;
   onCreateQuickMemo: (body: string) => void;
@@ -25,6 +29,9 @@ export function PostHeader({
   tags,
   selectedTagIds,
   onToggleTag,
+  onRequestCreateTag,
+  onRequestEditTag,
+  onRequestDeleteTag,
   quickMemoSubmitting,
   onCreateQuickMemo,
   aiCount,
@@ -42,6 +49,12 @@ export function PostHeader({
         </h2>
       </div>
 
+      {/* 빠른 메모 */}
+      <QuickMemoInput
+        isSubmitting={quickMemoSubmitting}
+        onCreate={onCreateQuickMemo}
+      />
+
       {/* 검색 */}
       <input
         type="text"
@@ -53,18 +66,27 @@ export function PostHeader({
 
       {/* 태그 필터 */}
       {tags.length > 0 && (
-        <TagFilterBar
+        <TagBar
           tags={tags}
           selectedTagIds={selectedTagIds}
           onToggleTag={onToggleTag}
+          onClickCreate={onRequestCreateTag}
+          onClickEdit={onRequestEditTag}
+          onClickDelete={onRequestDeleteTag}
         />
       )}
-
-      {/* 빠른 메모 */}
-      <QuickMemoInput
-        isSubmitting={quickMemoSubmitting}
-        onCreate={onCreateQuickMemo}
-      />
+      {tags.length === 0 && (
+        <div className="flex justify-start">
+          <button
+            type="button"
+            onClick={onRequestCreateTag}
+            className="inline-flex items-center gap-1 rounded-full border border-dashed border-slate-300 bg-slate-50 px-3 py-1 text-xs text-slate-500 hover:bg-slate-100"
+          >
+            <span className="h-2 w-2 rounded-full border border-slate-400" />
+            <span>+ 첫 태그 만들기</span>
+          </button>
+        </div>
+      )}
 
       {/* 오른쪽 버튼들 */}
       <div className="mt-1 flex items-center justify-end gap-2">

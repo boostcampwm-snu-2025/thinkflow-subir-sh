@@ -3,12 +3,17 @@ import { useItemsQuery } from '../api/useItemsQuery';
 import { useCreateItemMutation } from '../api/useCreateItemMutation';
 import { useUpdateItemMutation } from '../api/useUpdateItemMutation';
 import { useDeleteItemMutation } from '../api/useDeleteItemMutation';
-import type { Item } from '../../../shared/types';
+import {
+  useTagsQuery,
+  useCreateTagMutation,
+  useUpdateTagMutation,
+  useDeleteTagMutation,
+} from "../../tags/api/useTagsQuery";
+import type { Item, Tag } from '../../../shared/types';
 import { PostHeader } from '../components/PostHeader.js';
-import { QuickMemoInput } from '../components/QuickMemoInput.js';
 import { PostList } from '../components/PostList.js';
-import { useTagsQuery } from "../../tags/api/useTagsQuery"; 
-import { TagFilterBar } from "../../tags/components/TagFilterBar";
+import { TagEditModal } from "../../tags/components/TagEditModal";
+import { TagDeleteModal } from "../../tags/components/TagDeleteModal";
 
 export function PostPage() {
   const [searchText, setSearchText] = useState('');
@@ -22,6 +27,39 @@ export function PostPage() {
   const createItem = useCreateItemMutation();
   const updateItem = useUpdateItemMutation();
   const deleteItem = useDeleteItemMutation();
+
+  const createTag = useCreateTagMutation();
+  const updateTag = useUpdateTagMutation();
+  const deleteTag = useDeleteTagMutation();
+
+  const [tagModalMode, setTagModalMode] = useState<"create" | "edit" | null>(null);
+  const [tagModalTarget, setTagModalTarget] = useState<Tag | undefined>();
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+
+  const openCreateTag = () => {
+    setTagModalMode("create");
+    setTagModalTarget(undefined);
+  };
+
+  const openEditTag = (tag: Tag) => {
+    setTagModalMode("edit");
+    setTagModalTarget(tag);
+  };
+
+  const openDeleteTag = (tag: Tag) => {
+    setTagModalTarget(tag);
+    setDeleteModalOpen(true);
+  };
+
+  const closeEditModal = () => {
+    setTagModalMode(null);
+    setTagModalTarget(undefined);
+  };
+
+  const closeDeleteModal = () => {
+    setDeleteModalOpen(false);
+    setTagModalTarget(undefined);
+  };
 
   const handleToggleTag = (tagId: number) => {
     setSelectedTagIds((prev) =>
@@ -94,6 +132,9 @@ export function PostPage() {
           tags={tags}
           selectedTagIds={selectedTagIds}
           onToggleTag={handleToggleTag}
+          onRequestCreateTag={openCreateTag}
+          onRequestEditTag={openEditTag}
+          onRequestDeleteTag={openDeleteTag}
           quickMemoSubmitting={createItem.isPending}
           onCreateQuickMemo={handleCreateQuickMemo}
           aiCount={0}
@@ -134,6 +175,47 @@ export function PostPage() {
           />
         )}
       </div>
+      
+      {/* 태그 생성/편집 모달 */}
+      <TagEditModal
+        open={tagModalMode !== null}
+        mode={tagModalMode ?? "create"}
+        initialTag={
+          tagModalMode === "edit" && tagModalTarget
+            ? { name: tagModalTarget.name, color: tagModalTarget.color }
+            : undefined
+        }
+        onClose={closeEditModal}
+        submitting={
+          createTag.isPending || updateTag.isPending
+        }
+        onSubmit={(form) => {
+          if (tagModalMode === "create") {
+            createTag.mutate(form, { onSuccess: closeEditModal });
+          } else if (tagModalMode === "edit" && tagModalTarget) {
+            updateTag.mutate(
+              { id: tagModalTarget.id, ...form },
+              { onSuccess: closeEditModal },
+            );
+          }
+        }}
+      />
+
+      {/* 태그 삭제 모달 */}
+      <TagDeleteModal
+        open={deleteModalOpen}
+        tag={tagModalTarget}
+        onClose={closeDeleteModal}
+        submitting={deleteTag.isPending}
+        onConfirm={() => {
+          if (!tagModalTarget) return;
+          deleteTag.mutate(
+            { id: tagModalTarget.id },
+            { onSuccess: closeDeleteModal },
+          );
+        }}
+      />
+
     </div>
   );
 }
