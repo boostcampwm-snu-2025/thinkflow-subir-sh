@@ -7,15 +7,29 @@ import type { Item } from '../../../shared/types';
 import { PostHeader } from '../components/PostHeader.js';
 import { QuickMemoInput } from '../components/QuickMemoInput.js';
 import { PostList } from '../components/PostList.js';
+import { useTagsQuery } from "../../tags/api/useTagsQuery"; 
+import { TagFilterBar } from "../../tags/components/TagFilterBar";
 
 export function PostPage() {
   const [searchText, setSearchText] = useState('');
   // 태그/정렬 등은 이후에 여기서 확장 예정
+  const [selectedTagIds, setSelectedTagIds] = useState<number[]>([]);
 
   const { data, isLoading, error } = useItemsQuery();
+  const { data: tagsData } = useTagsQuery();  
+  const tags = tagsData ?? [];
+
   const createItem = useCreateItemMutation();
   const updateItem = useUpdateItemMutation();
   const deleteItem = useDeleteItemMutation();
+
+  const handleToggleTag = (tagId: number) => {
+    setSelectedTagIds((prev) =>
+      prev.includes(tagId)
+        ? prev.filter((id) => id !== tagId)
+        : [...prev, tagId],
+    );
+  };
 
   const filteredItems: Item[] = useMemo(() => {
     if (!data) return [];
@@ -35,7 +49,17 @@ export function PostPage() {
       });
     }
 
-    // 3) 최신순 정렬 (createdAt desc)
+    // 3) 태그 필터: selectedTagIds가 하나라도 있으면,
+    //    해당 태그들을 "하나 이상" 가지고 있는 아이템만 남김
+    if (selectedTagIds.length > 0) {
+      items = items.filter((item) => {
+        if (!item.tags || item.tags.length === 0) return false;
+        const itemTagIds = item.tags.map((t) => t.tagId);
+        return selectedTagIds.some((id) => itemTagIds.includes(id));
+      });
+    }
+
+    // 4) 최신순 정렬 (createdAt desc)
     return items
       .slice()
       .sort(
@@ -55,27 +79,26 @@ export function PostPage() {
   };
 
   const handleCreatePost = () => {
-    // TODO: 모달 오픈 예정
+    // @TODO: 모달 오픈 예정
+    // 여기서도 메모 작성 가능할 것이긴 함...? (내용을 비우면)
     alert('새 포스트 모달은 나중에 구현할 예정이에요 🙃');
   };
 
   return (
     <div className="min-h-screen bg-slate-100">
-      {/* 메인 카드(헤더 + 빠른 메모 입력) */}
+      {/* 헤더(검색 + 태그 필터링 + 메모/포스트 생성 등) */}
       <div className="mb-6 rounded-2xl bg-white p-4 shadow-sm md:p-6">
         <PostHeader
           searchText={searchText}
           onSearchChange={setSearchText}
+          tags={tags}
+          selectedTagIds={selectedTagIds}
+          onToggleTag={handleToggleTag}
+          quickMemoSubmitting={createItem.isPending}
+          onCreateQuickMemo={handleCreateQuickMemo}
           aiCount={0}
           onClickNewPost={handleCreatePost}
         />
-
-        <div className="mt-4">
-          <QuickMemoInput
-            isSubmitting={createItem.isPending}
-            onCreate={handleCreateQuickMemo}
-          />
-        </div>
       </div>
 
       {/* 리스트 영역 */}
