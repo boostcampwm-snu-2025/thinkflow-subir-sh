@@ -1,12 +1,13 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiPatch } from '../../../shared/api/client';
-import type { Item } from '../../../shared/types';
+import type { Item, ItemType } from '../../../shared/types';
 import { itemsQueryKey } from './useItemsQuery';
 
 interface UpdateItemInput {
   id: number;
   title?: string;
-  content?: string;
+  content?: string | null;
+  type: ItemType;
 }
 
 export function useUpdateItemMutation() {

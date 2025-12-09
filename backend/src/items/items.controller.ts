@@ -51,8 +51,8 @@ export const itemsController = {
 
   async update(req: Request, res: Response) {
     const id = Number(req.params.id);
-    const { title, content } = req.body;
-    const item = await itemService.update(id, { title, content });
+    const { title, content, type } = req.body;
+    const item = await itemService.update(id, { title, content, type });
     res.json(success(item));
   },
 

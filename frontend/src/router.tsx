@@ -1,16 +1,22 @@
 import { createBrowserRouter } from "react-router-dom";
+import { AppLayout } from "./shared/ui/AppLayout";
 import { PostPage } from "./features/items/pages/PostPage";
 import { TaskPage } from "./features/tasks/pages/TaskPage";
 
 export const router = createBrowserRouter([
   {
-    path: "/",
-    element: <PostPage />,
+    element: <AppLayout />,
     errorElement: <div>에러 발생</div>,
-  },
-  {
-    path: "/tasks",
-    element: <TaskPage />,
+    children: [
+      {
+        path: "/",
+        element: <PostPage />,
+      },
+      {
+        path: "/tasks",
+        element: <TaskPage />,
+      },
+    ],
   },
   {
     path: "*",

@@ -14,7 +14,7 @@ router.delete("/:id", tagsController.delete);
 
 /**
  * ITEM-TAG RELATIONS (N:N)
- * /tags/item/:itemId/tag/:tagId
+ * /tags/item/:itemId/:tagId
  */
 router.post("/item/:itemId/:tagId", tagsController.addTagToItem);
 router.delete("/item/:itemId/:tagId", tagsController.removeTagFromItem);
