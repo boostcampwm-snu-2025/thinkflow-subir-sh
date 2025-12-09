@@ -86,7 +86,6 @@ export function TagBar({
         onClick={onClickCreate}
         className="inline-flex items-center gap-1 rounded-full border border-dashed border-slate-300 bg-slate-50 px-3 py-1 text-xs text-slate-500 hover:bg-slate-100"
       >
-        <span className="h-2 w-2 rounded-full border border-slate-400" />
         <span>+ 새 태그</span>
       </button>
     </div>

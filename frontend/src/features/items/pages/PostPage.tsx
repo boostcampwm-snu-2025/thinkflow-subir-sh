@@ -105,7 +105,7 @@ export function PostPage() {
           new Date(b.createdAt).getTime() -
           new Date(a.createdAt).getTime(),
       );
-  }, [data, searchText]);
+  }, [data, searchText, selectedTagIds]);
 
   const handleCreateQuickMemo = (body: string) => {
     if (!body.trim()) return;
@@ -144,8 +144,7 @@ export function PostPage() {
 
       {/* 리스트 영역 */}
       <div className="rounded-2xl bg-white p-4 shadow-sm md:p-6">
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-lg font-semibold">메모 &amp; 포스트</h2>
+        <div className="flex items-center justify-between">
           {isLoading && (
             <span className="text-xs text-slate-400">
               불러오는 중...
