@@ -1,4 +1,4 @@
-import type { Item, ItemType } from "../../../shared/types";
+import type { Item, ItemType, Priority } from "../../../shared/types";
 import { TaskCard } from "./TaskCard";
 
 interface TaskListProps {
@@ -8,6 +8,10 @@ interface TaskListProps {
     title?: string;
     content?: string | null;
     type: ItemType;
+    taskDetail?: {
+      dueDate?: string | null;
+      priority?: Priority | null;
+    };
   }) => void;
   onDelete: (id: number) => void;
   isUpdating: boolean;

@@ -1,7 +1,12 @@
 import { useState } from "react";
 import clsx from "clsx";
 import { Pencil, Trash2 } from "lucide-react";
-import type { Item, ItemType } from "../../../shared/types";
+import type { Item, ItemType, Priority } from "../../../shared/types";
+import {
+  useCreateTaskDetailMutation,
+  useUpdateTaskDetailMutation,
+  useDeleteTaskDetailMutation,
+} from "../api/useTaskDetailMutations";
 
 interface TaskCardProps {
   item: Item;
@@ -10,6 +15,10 @@ interface TaskCardProps {
     title?: string;
     content?: string | null;
     type: ItemType;
+    taskDetail?: {
+      dueDate?: string | null;
+      priority?: Priority | null;
+    };
   }) => void;
   onDelete: (id: number) => void;
   isUpdating: boolean;
@@ -25,9 +34,23 @@ export function TaskCard({
   isDeleting,
   onEditTags,
 }: TaskCardProps) {
+  const createDetail = useCreateTaskDetailMutation();
+  const updateDetail = useUpdateTaskDetailMutation();
+  const deleteDetail = useDeleteTaskDetailMutation();
+
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(item.title);
   const [editContent, setEditContent] = useState(item.content ?? "");
+
+  const [editDueDate, setEditDueDate] = useState(
+    item.taskDetail?.dueDate
+        ? item.taskDetail.dueDate.slice(0, 10) // YYYY-MM-DD
+        : "",
+    );
+
+    const [editPriority, setEditPriority] = useState<Priority | "">(
+    item.taskDetail?.priority ?? "",
+    );
 
   const createdAt = new Date(item.createdAt).toLocaleString("ko-KR", {
     month: "2-digit",
@@ -49,12 +72,38 @@ export function TaskCard({
     const c = editContent.trim();
     if (!t) return;
 
+    // 1) Item 기본 필드 업데이트
     onUpdate({
-      id: item.id,
-      title: t,
-      content: c || null,
-      type: "TASK",
+        id: item.id,
+        title: t,
+        content: c || null,
+        type: "TASK",
     });
+
+    // 2) TaskDetail 부분 계산
+    const prevDetail = item.taskDetail ?? null;
+    const hadDetail = !!prevDetail;
+    const hasNewDetail = !!(editDueDate || editPriority);
+
+    if (!hadDetail && hasNewDetail) {
+        // 없던 거 새로 만듦 → POST
+        createDetail.mutate({
+        itemId: item.id,
+        dueDate: editDueDate || null,
+        priority: (editPriority || null) as Priority | null,
+        });
+    } else if (hadDetail && hasNewDetail) {
+        // 원래 있던 거 수정 → PATCH
+        updateDetail.mutate({
+        itemId: item.id,
+        dueDate: editDueDate || null,
+        priority: (editPriority || null) as Priority | null,
+        });
+    } else if (hadDetail && !hasNewDetail) {
+        // 원래 있었는데 다 비워버림 → DELETE
+        deleteDetail.mutate({ itemId: item.id });
+    }
+
     setIsEditing(false);
   };
 
@@ -62,6 +111,12 @@ export function TaskCard({
     setIsEditing(false);
     setEditTitle(item.title);
     setEditContent(item.content ?? "");
+    setEditDueDate(
+        item.taskDetail?.dueDate
+        ? item.taskDetail.dueDate.slice(0, 10)
+        : "",
+    );
+    setEditPriority(item.taskDetail?.priority ?? "");
   };
 
   return (
@@ -115,20 +170,52 @@ export function TaskCard({
       {/* 본문 */}
       <div className="flex-1 space-y-2">
         {isEditing ? (
-          <>
-            <input
-              className="w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-400"
-              value={editTitle}
-              onChange={(e) => setEditTitle(e.target.value)}
-              placeholder="할 일을 입력하세요"
-            />
-            <textarea
-              className="h-20 w-full resize-none rounded-md border border-slate-300 bg-white px-2 py-1 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-400"
-              value={editContent}
-              onChange={(e) => setEditContent(e.target.value)}
-              placeholder="메모가 있다면 함께 적어주세요"
-            />
-          </>
+            <>
+                <input
+                className="w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-400"
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                placeholder="할 일을 입력하세요"
+                />
+                <textarea
+                className="h-20 w-full resize-none rounded-md border border-slate-300 bg-white px-2 py-1 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-400"
+                value={editContent}
+                onChange={(e) => setEditContent(e.target.value)}
+                placeholder="메모가 있다면 함께 적어주세요"
+                />
+
+                {/* ⭐ 기한 */}
+                <div className="flex flex-wrap gap-2 text-[11px] text-slate-600">
+                <div className="flex items-center gap-1">
+                    <span className="text-slate-500">기한</span>
+                    <input
+                    type="date"
+                    className="rounded-md border border-slate-300 px-2 py-1 text-[11px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-400"
+                    value={editDueDate}
+                    onChange={(e) => setEditDueDate(e.target.value)}
+                    />
+                </div>
+
+                {/* 우선순위 */}
+                <div className="flex items-center gap-1">
+                    <span className="text-slate-500">우선순위</span>
+                    <select
+                    className="rounded-md border border-slate-300 bg-white px-2 py-1 text-[11px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-400"
+                    value={editPriority}
+                    onChange={(e) =>
+                        setEditPriority(
+                        (e.target.value || "") as Priority | "",
+                        )
+                    }
+                    >
+                    <option value="">선택 안 함</option>
+                    <option value="HIGH">높음</option>
+                    <option value="MEDIUM">중간</option>
+                    <option value="LOW">낮음</option>
+                    </select>
+                </div>
+                </div>
+            </>
         ) : (
           <>
             <h3 className="text-sm font-semibold text-slate-900">

@@ -13,9 +13,10 @@ import { TagBar } from "../../tags/components/TagBar";
 import { TagEditModal } from "../../tags/components/TagEditModal";
 import { TagDeleteModal } from "../../tags/components/TagDeleteModal";
 import { ItemTagSelectModal } from "../../items/components/ItemTagSelectModal";
-import type { Item, ItemType, Tag } from "../../../shared/types";
+import type { Item, ItemType, Priority, Tag } from "../../../shared/types";
 import { TaskCreateModal } from "../components/TaskCreateModal";
 import { TaskList } from "../components/TaskList";
+import { useCreateTaskDetailMutation } from "../api/useTaskDetailMutations";
 
 const TASKS_PER_PAGE = 5;
 
@@ -25,6 +26,7 @@ export function TaskPage() {
   const { data: itemsData, isLoading } = useItemsQuery();
   const { data: tagsData } = useTagsQuery();
   const createItem = useCreateItemMutation();
+  const createTaskDetail = useCreateTaskDetailMutation();
   const updateItem = useUpdateItemMutation();
   const deleteItem = useDeleteItemMutation();
   const createTag = useCreateTagMutation();
@@ -100,12 +102,33 @@ export function TaskPage() {
     currentPage * TASKS_PER_PAGE,
   );
 
-  const handleCreateTask = (data: { title: string; content?: string | null }) => {
-    createItem.mutate({
-      type: "TASK" as ItemType,
+  const handleCreateTask = async (data: {
+    title: string;
+    content?: string | null;
+    dueDate?: string | null;
+    priority?: Priority | null;
+  }) => {
+    const payload: { type: ItemType; title: string; content?: string } = {
+      type: "TASK",
       title: data.title,
-      content: data.content ?? undefined,
-    });
+    };
+
+    if (data.content && data.content.trim()) {
+      payload.content = data.content.trim();
+    }
+
+    // 1) Item 먼저 생성
+    const created = await createItem.mutateAsync(payload);
+
+    // 2) TaskDetail 정보가 있다면 별도 API로 생성
+    if (created && (data.dueDate || data.priority)) {
+      await createTaskDetail.mutateAsync({
+        itemId: created.id,
+        dueDate: data.dueDate ?? null,
+        priority: data.priority ?? null,
+      });
+    }
+
     setCreateModalOpen(false);
   };
 
@@ -114,6 +137,10 @@ export function TaskPage() {
     title?: string;
     content?: string | null;
     type: ItemType;
+    taskDetail?: {
+      dueDate?: string | null;
+      priority?: Priority | null;
+    };
   }) => {
     updateItem.mutate(input);
   };

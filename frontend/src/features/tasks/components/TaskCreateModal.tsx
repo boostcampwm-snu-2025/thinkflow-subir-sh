@@ -2,11 +2,17 @@ import type { FormEvent } from "react";
 import { useState } from "react";
 import clsx from "clsx";
 import { Modal } from "../../../shared/ui/Modal";
+import type { Priority } from "../../../shared/types";
 
 interface TaskCreateModalProps {
   open: boolean;
   onClose: () => void;
-  onSubmit: (data: { title: string; content?: string | null }) => void;
+  onSubmit: (data: {
+    title: string;
+    content?: string | null;
+    dueDate?: string | null;
+    priority?: Priority | null;
+  }) => void;
   submitting: boolean;
 }
 
@@ -16,12 +22,18 @@ export function TaskCreateModal({
   onSubmit,
   submitting,
 }: TaskCreateModalProps) {
+  // @TODO: Reducer를 쓰는 게 낫지 않나? 
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
+
+  const [dueDate, setDueDate] = useState("");           // YYYY-MM-DD
+  const [priority, setPriority] = useState<Priority | "">("");
 
   const reset = () => {
     setTitle("");
     setContent("");
+    setDueDate("");
+    setPriority("");
   };
 
   const handleClose = () => {
@@ -35,7 +47,12 @@ export function TaskCreateModal({
     const c = content.trim();
     if (!t) return;
 
-    onSubmit({ title: t, content: c || undefined });
+    onSubmit({
+        title: t,
+        content: c || null,
+        dueDate: dueDate || null,
+        priority: priority || null,
+    });
     reset();
   };
 
@@ -70,6 +87,40 @@ export function TaskCreateModal({
             onChange={(e) => setContent(e.target.value)}
             placeholder="메모나 세부 작업이 있다면 적어주세요"
           />
+        </div>
+
+        {/* 기한 */}
+        <div className="space-y-1">
+            <label className="text-xs font-medium text-slate-600">
+            기한 (선택)
+            </label>
+            <input
+            type="date"
+            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-400"
+            value={dueDate}
+            onChange={(e) => setDueDate(e.target.value)}
+            />
+        </div>
+
+        {/* 우선순위 */}
+        <div className="space-y-1">
+            <label className="text-xs font-medium text-slate-600">
+            우선순위 (선택)
+            </label>
+            <select
+            className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-400"
+            value={priority}
+            onChange={(e) =>
+                setPriority(
+                (e.target.value || "") as Priority | "",
+                )
+            }
+            >
+            <option value="">선택 안 함</option>
+            <option value="HIGH">높음</option>
+            <option value="MEDIUM">중간</option>
+            <option value="LOW">낮음</option>
+            </select>
         </div>
 
         <div className="mt-2 flex justify-end gap-2 text-sm">
