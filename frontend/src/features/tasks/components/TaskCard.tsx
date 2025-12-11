@@ -1,7 +1,12 @@
 import { useState } from "react";
 import clsx from "clsx";
 import { Pencil, Trash2 } from "lucide-react";
-import type { Item, ItemType, Priority } from "../../../shared/types";
+import type {
+  Item,
+  ItemType,
+  Priority,
+  TaskStatus,
+} from "../../../shared/types";
 import {
   useCreateTaskDetailMutation,
   useUpdateTaskDetailMutation,
@@ -44,13 +49,13 @@ export function TaskCard({
 
   const [editDueDate, setEditDueDate] = useState(
     item.taskDetail?.dueDate
-        ? item.taskDetail.dueDate.slice(0, 10) // YYYY-MM-DD
-        : "",
-    );
+      ? item.taskDetail.dueDate.slice(0, 10) // YYYY-MM-DD
+      : ""
+  );
 
-    const [editPriority, setEditPriority] = useState<Priority | "">(
-    item.taskDetail?.priority ?? "",
-    );
+  const [editPriority, setEditPriority] = useState<Priority | "">(
+    item.taskDetail?.priority ?? ""
+  );
 
   const createdAt = new Date(item.createdAt).toLocaleString("ko-KR", {
     month: "2-digit",
@@ -66,6 +71,8 @@ export function TaskCard({
       : "기한 없음";
 
   const priority = item.taskDetail?.priority ?? null;
+  const currentStatus: TaskStatus = item.taskDetail?.status ?? "READY";
+  const isDone = currentStatus === "DONE";
 
   const handleSave = () => {
     const t = editTitle.trim();
@@ -74,10 +81,10 @@ export function TaskCard({
 
     // 1) Item 기본 필드 업데이트
     onUpdate({
-        id: item.id,
-        title: t,
-        content: c || null,
-        type: "TASK",
+      id: item.id,
+      title: t,
+      content: c || null,
+      type: "TASK",
     });
 
     // 2) TaskDetail 부분 계산
@@ -86,22 +93,22 @@ export function TaskCard({
     const hasNewDetail = !!(editDueDate || editPriority);
 
     if (!hadDetail && hasNewDetail) {
-        // 없던 거 새로 만듦 → POST
-        createDetail.mutate({
+      // 없던 거 새로 만듦 → POST
+      createDetail.mutate({
         itemId: item.id,
         dueDate: editDueDate || null,
         priority: (editPriority || null) as Priority | null,
-        });
+      });
     } else if (hadDetail && hasNewDetail) {
-        // 원래 있던 거 수정 → PATCH
-        updateDetail.mutate({
+      // 원래 있던 거 수정 → PATCH
+      updateDetail.mutate({
         itemId: item.id,
         dueDate: editDueDate || null,
         priority: (editPriority || null) as Priority | null,
-        });
+      });
     } else if (hadDetail && !hasNewDetail) {
-        // 원래 있었는데 다 비워버림 → DELETE
-        deleteDetail.mutate({ itemId: item.id });
+      // 원래 있었는데 다 비워버림 → DELETE
+      deleteDetail.mutate({ itemId: item.id });
     }
 
     setIsEditing(false);
@@ -112,15 +119,54 @@ export function TaskCard({
     setEditTitle(item.title);
     setEditContent(item.content ?? "");
     setEditDueDate(
-        item.taskDetail?.dueDate
-        ? item.taskDetail.dueDate.slice(0, 10)
-        : "",
+      item.taskDetail?.dueDate ? item.taskDetail.dueDate.slice(0, 10) : ""
     );
     setEditPriority(item.taskDetail?.priority ?? "");
   };
 
+  // TaskStatus: DONE <> READY 토글
+  const handleToggleStatus = () => {
+    const nextStatus: TaskStatus = isDone ? "READY" : "DONE";
+
+    if (!item.taskDetail) {
+      // 아직 TaskDetail row가 없으면 새로 생성
+      createDetail.mutate({
+        itemId: item.id,
+        status: nextStatus,
+        // 필요하다면 기존 editDueDate / editPriority를 같이 넘겨도 됨
+      });
+    } else {
+      // 이미 TaskDetail이 있으면 status만 업데이트
+      updateDetail.mutate({
+        itemId: item.id,
+        status: nextStatus,
+      });
+    }
+  };
+
+  // TaskStatus: READY / IN_PROGRESS / PENDING 변경
+  const handleChangeStatus = (next: TaskStatus) => {
+    if (next === "DONE") return;
+    updateDetail.mutate({
+      itemId: item.id,
+      status: next,
+    });
+  };
+
   return (
-    <article className="flex h-full flex-col rounded-2xl border border-slate-100 bg-slate-50 p-4 shadow-sm">
+    <article
+      className={clsx(
+        "flex h-full flex-col rounded-2xl border p-4 shadow-sm transition-colors",
+
+        currentStatus === "DONE" && "border-emerald-100 bg-emerald-50",
+
+        currentStatus === "IN_PROGRESS" && "border-blue-100 bg-blue-50",
+
+        currentStatus === "PENDING" && "border-amber-100 bg-amber-50",
+
+        currentStatus === "READY" && "border-slate-100 bg-slate-50"
+      )}
+    >
       {/* 상단: 태그 + 우측 아이콘 */}
       <div className="mb-2 flex items-center justify-between gap-2">
         <div className="flex flex-wrap gap-1 text-[10px]">
@@ -157,7 +203,7 @@ export function TaskCard({
               disabled={isDeleting}
               className={clsx(
                 "rounded p-1 text-red-600 hover:bg-red-100",
-                isDeleting && "opacity-50",
+                isDeleting && "opacity-50"
               )}
               title="삭제"
             >
@@ -170,63 +216,81 @@ export function TaskCard({
       {/* 본문 */}
       <div className="flex-1 space-y-2">
         {isEditing ? (
-            <>
-                <input
-                className="w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-400"
-                value={editTitle}
-                onChange={(e) => setEditTitle(e.target.value)}
-                placeholder="할 일을 입력하세요"
-                />
-                <textarea
-                className="h-20 w-full resize-none rounded-md border border-slate-300 bg-white px-2 py-1 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-400"
-                value={editContent}
-                onChange={(e) => setEditContent(e.target.value)}
-                placeholder="메모가 있다면 함께 적어주세요"
-                />
-
-                {/* ⭐ 기한 */}
-                <div className="flex flex-wrap gap-2 text-[11px] text-slate-600">
-                <div className="flex items-center gap-1">
-                    <span className="text-slate-500">기한</span>
-                    <input
-                    type="date"
-                    className="rounded-md border border-slate-300 px-2 py-1 text-[11px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-400"
-                    value={editDueDate}
-                    onChange={(e) => setEditDueDate(e.target.value)}
-                    />
-                </div>
-
-                {/* 우선순위 */}
-                <div className="flex items-center gap-1">
-                    <span className="text-slate-500">우선순위</span>
-                    <select
-                    className="rounded-md border border-slate-300 bg-white px-2 py-1 text-[11px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-400"
-                    value={editPriority}
-                    onChange={(e) =>
-                        setEditPriority(
-                        (e.target.value || "") as Priority | "",
-                        )
-                    }
-                    >
-                    <option value="">선택 안 함</option>
-                    <option value="HIGH">높음</option>
-                    <option value="MEDIUM">중간</option>
-                    <option value="LOW">낮음</option>
-                    </select>
-                </div>
-                </div>
-            </>
-        ) : (
           <>
-            <h3 className="text-sm font-semibold text-slate-900">
-              {item.title || "(제목 없음)"}
-            </h3>
-            {item.content && (
-              <p className="whitespace-pre-line text-sm text-slate-700">
-                {item.content}
-              </p>
-            )}
+            <input
+              className="w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-400"
+              value={editTitle}
+              onChange={(e) => setEditTitle(e.target.value)}
+              placeholder="할 일을 입력하세요"
+            />
+            <textarea
+              className="h-20 w-full resize-none rounded-md border border-slate-300 bg-white px-2 py-1 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-400"
+              value={editContent}
+              onChange={(e) => setEditContent(e.target.value)}
+              placeholder="메모가 있다면 함께 적어주세요"
+            />
+
+            {/* ⭐ 기한 */}
+            <div className="flex flex-wrap gap-2 text-[11px] text-slate-600">
+              <div className="flex items-center gap-1">
+                <span className="text-slate-500">기한</span>
+                <input
+                  type="date"
+                  className="rounded-md border border-slate-300 px-2 py-1 text-[11px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-400"
+                  value={editDueDate}
+                  onChange={(e) => setEditDueDate(e.target.value)}
+                />
+              </div>
+
+              {/* 우선순위 */}
+              <div className="flex items-center gap-1">
+                <span className="text-slate-500">우선순위</span>
+                <select
+                  className="rounded-md border border-slate-300 bg-white px-2 py-1 text-[11px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-400"
+                  value={editPriority}
+                  onChange={(e) =>
+                    setEditPriority((e.target.value || "") as Priority | "")
+                  }
+                >
+                  <option value="">선택 안 함</option>
+                  <option value="HIGH">높음</option>
+                  <option value="MEDIUM">중간</option>
+                  <option value="LOW">낮음</option>
+                </select>
+              </div>
+            </div>
           </>
+        ) : (
+          <div className="flex gap-2">
+            {/* ⭐ 완료 체크박스 */}
+            <input
+              type="checkbox"
+              checked={isDone}
+              onChange={handleToggleStatus}
+              className="mt-[2px] h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+            />
+
+            <div className="space-y-1">
+              <h3
+                className={clsx(
+                  "text-sm font-semibold",
+                  isDone ? "text-slate-400 line-through" : "text-slate-900"
+                )}
+              >
+                {item.title || "(제목 없음)"}
+              </h3>
+              {item.content && (
+                <p
+                  className={clsx(
+                    "whitespace-pre-line text-sm",
+                    isDone ? "text-slate-300 line-through" : "text-slate-700"
+                  )}
+                >
+                  {item.content}
+                </p>
+              )}
+            </div>
+          </div>
         )}
       </div>
 
@@ -236,19 +300,18 @@ export function TaskCard({
           <span>{createdAt} 생성</span>
           <span className="h-1 w-1 rounded-full bg-slate-300" />
           <span>
-            기한:{" "}
-            <span className="font-medium text-slate-600">{dueLabel}</span>
+            기한: <span className="font-medium text-slate-600">{dueLabel}</span>
           </span>
         </div>
 
         <div className="flex items-center gap-2">
-          {priority && (
+          {!isDone && priority && (
             <span
               className={clsx(
                 "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold",
                 priority === "HIGH" && "bg-red-100 text-red-700",
                 priority === "MEDIUM" && "bg-amber-100 text-amber-700",
-                priority === "LOW" && "bg-emerald-100 text-emerald-700",
+                priority === "LOW" && "bg-emerald-100 text-emerald-700"
               )}
             >
               {priority === "HIGH"
@@ -256,6 +319,38 @@ export function TaskCard({
                 : priority === "MEDIUM"
                 ? "중간"
                 : "낮음"}
+            </span>
+          )}
+
+          {/* ⭐ 상태 선택 버튼들 (DONE 아닐 때만) */}
+          {!isDone && (
+            <div className="flex gap-1 text-[10px]">
+              {[
+                { key: "READY", label: "대기" },
+                { key: "IN_PROGRESS", label: "진행중" },
+                { key: "PENDING", label: "보류" },
+              ].map((s) => (
+                <button
+                  key={s.key}
+                  type="button"
+                  onClick={() => handleChangeStatus(s.key as TaskStatus)}
+                  className={clsx(
+                    "rounded-full px-2 py-0.5",
+                    currentStatus === s.key
+                      ? "bg-slate-900 text-white"
+                      : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+                  )}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* DONE일 때는 위에서 말한 초록 뱃지 하나만 */}
+          {isDone && (
+            <span className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+              완료
             </span>
           )}
 
@@ -268,11 +363,11 @@ export function TaskCard({
                   "rounded px-2 py-1 text-[11px] font-semibold text-white",
                   isUpdating
                     ? "bg-slate-400"
-                    : "bg-emerald-600 hover:bg-emerald-700",
+                    : "bg-emerald-600 hover:bg-emerald-700"
                 )}
               >
                 {isUpdating ? "저장중" : "저장"}
-            </button>
+              </button>
               <button
                 onClick={handleCancel}
                 className="rounded px-2 py-1 text-[11px] text-slate-600 hover:bg-slate-100"
