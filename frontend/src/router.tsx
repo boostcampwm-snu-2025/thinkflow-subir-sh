@@ -1,6 +1,6 @@
 import { createBrowserRouter } from "react-router-dom";
 import { AppLayout } from "./shared/ui/AppLayout";
-import { PostPage } from "./features/items/pages/PostPage";
+import { PostPage } from "./features/posts/pages/PostPage";
 import { TaskPage } from "./features/tasks/pages/TaskPage";
 
 export const router = createBrowserRouter([

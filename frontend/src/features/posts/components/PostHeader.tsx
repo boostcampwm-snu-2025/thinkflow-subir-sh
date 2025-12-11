@@ -44,7 +44,7 @@ export function PostHeader({
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-2">
-        <h2 className="text-base font-semibold text-slate-900">
+        <h2 className="text-sm font-semibold text-slate-900">
           메모 &amp; 포스트
         </h2>
       </div>

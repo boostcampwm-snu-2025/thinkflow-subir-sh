@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
-import { useItemsQuery } from '../api/useItemsQuery';
-import { useCreateItemMutation } from '../api/useCreateItemMutation';
-import { useUpdateItemMutation } from '../api/useUpdateItemMutation';
-import { useDeleteItemMutation } from '../api/useDeleteItemMutation';
+import { useItemsQuery } from '../../items/api/useItemsQuery';
+import { useCreateItemMutation } from '../../items/api/useCreateItemMutation';
+import { useUpdateItemMutation } from '../../items/api/useUpdateItemMutation';
+import { useDeleteItemMutation } from '../../items/api/useDeleteItemMutation';
 import {
   useTagsQuery,
   useCreateTagMutation,
@@ -14,7 +14,7 @@ import { PostHeader } from '../components/PostHeader.js';
 import { PostList } from '../components/PostList.js';
 import { TagEditModal } from "../../tags/components/TagEditModal";
 import { TagDeleteModal } from "../../tags/components/TagDeleteModal";
-import { ItemTagSelectModal } from "../components/ItemTagSelectModal.js";
+import { ItemTagSelectModal } from "../../items/components/ItemTagSelectModal.js";
 
 export function PostPage() {
   const [searchText, setSearchText] = useState('');
