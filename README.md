@@ -72,3 +72,18 @@ https://github.com/user-attachments/assets/00ba7836-5cf9-47ef-8d35-a7abfd85c3c7
 
 - FE: http://localhost:5173
 - BE: http://localhost:3000 (Swagger: http://localhost:3000/api-docs)
+
+## MVP 구현 이후 구체적인 투두 리스트
+- 댓글, LLM 연동, 캘린더, 타임라인 등 확장 기능
+- BE: 에러 처리를 Service로 이동
+- BE: User, Auth 미들웨어 추가?
+- BE: (구현하고 싶다면) 유저 별 아이템 페이지네이션 API 제공
+- BE: tags.routes.ts에서 태그를 아이템에 추가하는 로직 items.routes.ts로 이전
+- BE: 모든 API에 @openapi 추가하기 (Swagger)
+- FE: 기한, 우선 순위, 상태 별 정렬/필터링
+- FE: 캘린더 도입 시 RepeatRule 추가
+- FE: 한 아이템이 수정될 때마다 전체 아이템 refetch되는 것 방지하기 (Tanstack query의 invalidateQueries -> setQueryData ?)
+- FE: TaskCard clsx의 하드 코딩 제거
+- FE: 태그 수정/삭제 시 리스트 아이템에 즉각 반영 안됨 (새로고침 시 반영)
+- FE: 태그 호버링 UI가 다른 태그 뒤에 나타남
+- FE: 리팩토링!!! -> 엄청나게 많은 State들 더 깔끔하게 관리...
