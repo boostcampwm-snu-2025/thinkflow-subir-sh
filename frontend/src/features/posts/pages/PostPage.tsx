@@ -9,7 +9,7 @@ import {
   useUpdateTagMutation,
   useDeleteTagMutation,
 } from "../../tags/api/useTagsQuery";
-import type { Item, Tag, ItemType } from '../../../shared/types';
+import type { Item, Tag, ItemType, Priority } from '../../../shared/types';
 import { PostHeader } from '../components/PostHeader.js';
 import { PostList } from '../components/PostList.js';
 import { TagEditModal } from "../../tags/components/TagEditModal";
@@ -18,6 +18,9 @@ import { ItemTagSelectModal } from "../../items/components/ItemTagSelectModal.js
 import { PostCreateModal } from '../components/PostCreateModal';
 import { useItemDeleteModal } from '../../items/api/useItemDeleteModal.js';
 import { ItemDeleteModal } from '../../items/components/ItemDeleteModal.js';
+import { TaskCreateModal } from "../../tasks/components/TaskCreateModal";
+import { useCreateTaskDetailMutation } from "../../tasks/api/useTaskDetailMutations";
+import { useAddTagToItem } from "../../items/api/useAddTagToItem";
 
 export function PostPage() {
   const [searchText, setSearchText] = useState('');
@@ -37,12 +40,16 @@ export function PostPage() {
   const deleteTag = useDeleteTagMutation();
 
   const del = useItemDeleteModal();
+  const createTaskDetail = useCreateTaskDetailMutation();
+  const addTagToItem = useAddTagToItem();
 
   const [tagModalMode, setTagModalMode] = useState<"create" | "edit" | null>(null);
   const [tagModalTarget, setTagModalTarget] = useState<Tag | undefined>();
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [tagTargetItem, setTagTargetItem] = useState<Item | null>(null);
   const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [promoteOpen, setPromoteOpen] = useState(false);
+  const [promoteTarget, setPromoteTarget] = useState<Item | null>(null);
 
   const openCreateTag = () => {
     setTagModalMode("create");
@@ -135,6 +142,18 @@ export function PostPage() {
     del.closeModal();
   };
 
+  const openPromoteById = (id: number) => {
+    const target = filteredItems.find((it) => it.id === id);
+    if (!target) return;
+    setPromoteTarget(target);
+    setPromoteOpen(true);
+  };
+
+  const closePromote = () => {
+    setPromoteOpen(false);
+    setPromoteTarget(null);
+  };
+
   const handleCreateQuickMemo = (body: string) => {
     if (!body.trim()) return;
     // 빠른 생성: MEMO, title만 사용
@@ -165,6 +184,43 @@ export function PostPage() {
     });
 
     setCreateModalOpen(false);
+  };
+
+  const handleSubmitPromotedTask = async (data: {
+    title: string;
+    content?: string | null;
+    dueDate?: string | null;
+    priority?: Priority | null;
+  }) => {
+    if (!promoteTarget) return;
+
+    // 1) TASK Item 생성
+    const payload: { type: ItemType; title: string; content?: string } = {
+      type: "TASK",
+      title: data.title,
+    };
+    if (data.content && data.content.trim()) {
+      payload.content = data.content.trim();
+    }
+
+    const created = await createItem.mutateAsync(payload);
+
+    // 2) TaskDetail 생성
+    if (created) {
+      await createTaskDetail.mutateAsync({
+        itemId: created.id,
+        dueDate: data.dueDate ?? null,
+        priority: data.priority ?? null,
+      });
+    }
+
+    // 3) 태그 복사 (원본 아이템이 가진 tagId들을 새 태스크로)
+    const tagIds = promoteTarget.tags?.map((t) => t.tagId) ?? [];
+    for (const tagId of tagIds) {
+      await addTagToItem.mutateAsync({ itemId: created.id, tagId });
+    }
+
+    closePromote();
   };
 
   return (
@@ -214,6 +270,7 @@ export function PostPage() {
             items={filteredItems}
             onUpdate={(payload) => updateItem.mutate(payload)}
             onDelete={openDeleteById}
+            onPromoteToTask={openPromoteById}
             isUpdating={updateItem.isPending}
             isDeleting={deleteItem.isPending}
             onEditTags={handleOpenTagModal}
@@ -226,6 +283,21 @@ export function PostPage() {
         onClose={() => setCreateModalOpen(false)}
         onSubmit={handleSubmitPost}
         submitting={createItem.isPending}
+      />
+
+      <TaskCreateModal
+        open={promoteOpen}
+        onClose={closePromote}
+        onSubmit={handleSubmitPromotedTask}
+        submitting={
+          createItem.isPending ||
+          createTaskDetail.isPending ||
+          addTagToItem.isPending
+        }
+        initialValues={{
+          title: promoteTarget?.title ?? "",
+          content: promoteTarget?.content ?? "",
+        }}
       />
 
       <ItemDeleteModal

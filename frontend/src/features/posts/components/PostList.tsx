@@ -10,6 +10,7 @@ interface PostListProps {
     type: ItemType;
   }) => void;
   onDelete: (id: number) => void;
+  onPromoteToTask: (id: number) => void;
   isUpdating: boolean;
   isDeleting: boolean;
   onEditTags: (item: Item) => void;
@@ -19,6 +20,7 @@ export function PostList({
   items,
   onUpdate,
   onDelete,
+  onPromoteToTask,
   isUpdating,
   isDeleting,
   onEditTags,
@@ -31,6 +33,7 @@ export function PostList({
           item={item}
           onUpdate={onUpdate}
           onDelete={onDelete}
+          onPromoteToTask={onPromoteToTask}
           isUpdating={isUpdating}
           isDeleting={isDeleting}
           onEditTags={onEditTags}
