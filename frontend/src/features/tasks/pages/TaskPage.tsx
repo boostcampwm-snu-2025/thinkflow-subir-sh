@@ -120,8 +120,8 @@ export function TaskPage() {
     // 1) Item 먼저 생성
     const created = await createItem.mutateAsync(payload);
 
-    // 2) TaskDetail 정보가 있다면 별도 API로 생성
-    if (created && (data.dueDate || data.priority)) {
+    // 2) TaskDetail 별도 API로 생성
+    if (created) {
       await createTaskDetail.mutateAsync({
         itemId: created.id,
         dueDate: data.dueDate ?? null,

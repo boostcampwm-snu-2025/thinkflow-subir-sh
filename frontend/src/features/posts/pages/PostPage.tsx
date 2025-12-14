@@ -9,12 +9,13 @@ import {
   useUpdateTagMutation,
   useDeleteTagMutation,
 } from "../../tags/api/useTagsQuery";
-import type { Item, Tag } from '../../../shared/types';
+import type { Item, Tag, ItemType } from '../../../shared/types';
 import { PostHeader } from '../components/PostHeader.js';
 import { PostList } from '../components/PostList.js';
 import { TagEditModal } from "../../tags/components/TagEditModal";
 import { TagDeleteModal } from "../../tags/components/TagDeleteModal";
 import { ItemTagSelectModal } from "../../items/components/ItemTagSelectModal.js";
+import { PostCreateModal } from '../components/PostCreateModal';
 
 export function PostPage() {
   const [searchText, setSearchText] = useState('');
@@ -37,7 +38,8 @@ export function PostPage() {
   const [tagModalTarget, setTagModalTarget] = useState<Tag | undefined>();
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [tagTargetItem, setTagTargetItem] = useState<Item | null>(null);
-  
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+
   const openCreateTag = () => {
     setTagModalMode("create");
     setTagModalTarget(undefined);
@@ -127,9 +129,26 @@ export function PostPage() {
   };
 
   const handleCreatePost = () => {
-    // @TODO: 모달 오픈 예정
-    // 여기서도 메모 작성 가능할 것이긴 함...? (내용을 비우면)
-    alert('새 포스트 모달은 나중에 구현할 예정이에요 🙃');
+    setCreateModalOpen(true);
+  };
+
+  const handleSubmitPost = async (data: {
+    title: string;
+    content?: string | null;
+  }) => {
+    const t = data.title.trim();
+    const c = (data.content ?? "").trim();
+    if (!t) return;
+
+    const nextType: ItemType = c ? "POST" : "MEMO";
+
+    await createItem.mutateAsync({
+      type: nextType,
+      title: t,
+      ...(c && { content: c }),
+    });
+
+    setCreateModalOpen(false);
   };
 
   return (
@@ -185,6 +204,13 @@ export function PostPage() {
           />
         )}
       </div>
+
+      <PostCreateModal
+        open={createModalOpen}
+        onClose={() => setCreateModalOpen(false)}
+        onSubmit={handleSubmitPost}
+        submitting={createItem.isPending}
+      />
       
       {/* 태그 생성/편집 모달 */}
       <TagEditModal
