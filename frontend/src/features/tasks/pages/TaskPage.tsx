@@ -17,6 +17,8 @@ import type { Item, ItemType, Priority, Tag } from "../../../shared/types";
 import { TaskCreateModal } from "../components/TaskCreateModal";
 import { TaskList } from "../components/TaskList";
 import { useCreateTaskDetailMutation } from "../api/useTaskDetailMutations";
+import { useItemDeleteModal } from '../../items/api/useItemDeleteModal.js';
+import { ItemDeleteModal } from '../../items/components/ItemDeleteModal.js';
 
 const TASKS_PER_PAGE = 5;
 
@@ -32,6 +34,7 @@ export function TaskPage() {
   const createTag = useCreateTagMutation();
   const updateTag = useUpdateTagMutation();
   const deleteTag = useDeleteTagMutation();
+  const del = useItemDeleteModal();
 
   const allTags = tagsData ?? [];
   const [selectedTagIds, setSelectedTagIds] = useState<number[]>([]);
@@ -102,6 +105,18 @@ export function TaskPage() {
     currentPage * TASKS_PER_PAGE,
   );
 
+  const openDeleteById = (id: number) => {
+    const item = filteredTasks.find((it) => it.id === id);
+    if (!item) return;
+    del.openModal(item);
+  };
+
+  const confirmDelete = async () => {
+    if (!del.target) return;
+    await deleteItem.mutateAsync({ id: del.target.id });
+    del.closeModal();
+  };
+
   const handleCreateTask = async (data: {
     title: string;
     content?: string | null;
@@ -143,10 +158,6 @@ export function TaskPage() {
     };
   }) => {
     updateItem.mutate(input);
-  };
-
-  const handleDeleteTask = (id: number) => {
-    deleteItem.mutate({ id });
   };
 
   const handleOpenTagCreate = () => {
@@ -291,7 +302,7 @@ export function TaskPage() {
               <TaskList
                 items={pagedTasks}
                 onUpdate={handleUpdateTask}
-                onDelete={handleDeleteTask}
+                onDelete={openDeleteById}
                 isUpdating={updateItem.isPending}
                 isDeleting={deleteItem.isPending}
                 onEditTags={handleOpenItemTagModal}
@@ -344,6 +355,14 @@ export function TaskPage() {
         onClose={() => setCreateModalOpen(false)}
         onSubmit={handleCreateTask}
         submitting={createItem.isPending}
+      />
+
+      <ItemDeleteModal
+        open={del.open}
+        item={del.target}
+        onClose={del.closeModal}
+        onConfirm={confirmDelete}
+        submitting={deleteItem.isPending}
       />
 
       <TagEditModal

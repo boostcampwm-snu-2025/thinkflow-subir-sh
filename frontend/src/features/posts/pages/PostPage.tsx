@@ -16,6 +16,8 @@ import { TagEditModal } from "../../tags/components/TagEditModal";
 import { TagDeleteModal } from "../../tags/components/TagDeleteModal";
 import { ItemTagSelectModal } from "../../items/components/ItemTagSelectModal.js";
 import { PostCreateModal } from '../components/PostCreateModal';
+import { useItemDeleteModal } from '../../items/api/useItemDeleteModal.js';
+import { ItemDeleteModal } from '../../items/components/ItemDeleteModal.js';
 
 export function PostPage() {
   const [searchText, setSearchText] = useState('');
@@ -33,6 +35,8 @@ export function PostPage() {
   const createTag = useCreateTagMutation();
   const updateTag = useUpdateTagMutation();
   const deleteTag = useDeleteTagMutation();
+
+  const del = useItemDeleteModal();
 
   const [tagModalMode, setTagModalMode] = useState<"create" | "edit" | null>(null);
   const [tagModalTarget, setTagModalTarget] = useState<Tag | undefined>();
@@ -60,7 +64,7 @@ export function PostPage() {
     setTagModalTarget(undefined);
   };
 
-  const closeDeleteModal = () => {
+  const closeDeleteTag = () => {
     setDeleteModalOpen(false);
     setTagModalTarget(undefined);
   };
@@ -118,6 +122,18 @@ export function PostPage() {
           new Date(a.createdAt).getTime(),
       );
   }, [data, searchText, selectedTagIds]);
+
+  const openDeleteById = (id: number) => {
+    const item = filteredItems.find((it) => it.id === id);
+    if (!item) return;
+    del.openModal(item);
+  };
+
+  const confirmDelete = async () => {
+    if (!del.target) return;
+    await deleteItem.mutateAsync({ id: del.target.id });
+    del.closeModal();
+  };
 
   const handleCreateQuickMemo = (body: string) => {
     if (!body.trim()) return;
@@ -197,7 +213,7 @@ export function PostPage() {
           <PostList
             items={filteredItems}
             onUpdate={(payload) => updateItem.mutate(payload)}
-            onDelete={(id) => deleteItem.mutate({ id })}
+            onDelete={openDeleteById}
             isUpdating={updateItem.isPending}
             isDeleting={deleteItem.isPending}
             onEditTags={handleOpenTagModal}
@@ -210,6 +226,14 @@ export function PostPage() {
         onClose={() => setCreateModalOpen(false)}
         onSubmit={handleSubmitPost}
         submitting={createItem.isPending}
+      />
+
+      <ItemDeleteModal
+        open={del.open}
+        item={del.target}
+        onClose={del.closeModal}
+        onConfirm={confirmDelete}
+        submitting={deleteItem.isPending}
       />
       
       {/* 태그 생성/편집 모달 */}
@@ -241,13 +265,17 @@ export function PostPage() {
       <TagDeleteModal
         open={deleteModalOpen}
         tag={tagModalTarget}
-        onClose={closeDeleteModal}
+        onClose={closeDeleteTag
+      
+        }
         submitting={deleteTag.isPending}
         onConfirm={() => {
           if (!tagModalTarget) return;
           deleteTag.mutate(
             { id: tagModalTarget.id },
-            { onSuccess: closeDeleteModal },
+            { onSuccess: closeDeleteTag
+          
+             },
           );
         }}
       />
