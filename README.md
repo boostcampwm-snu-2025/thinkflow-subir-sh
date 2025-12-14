@@ -1,6 +1,10 @@
 # thinkflow-lsh
 아이디어(메모, 포스팅) + 태스크(투두 리스트, 캘린더)를 한 번에 관리할 수 있는 문서 정리 앱 (w/ LLM)
 
+기술 스택: <br>
+BE - Express, Prisma, PostgreSQL, TS <br>
+FE - React, Vite, TS + TailwindCSS, Tanstack Query, axios, clsx, Zustand 
+
 실행 방법:
 
 1. /backend에 .env 생성 (내용: DATABASE_URL="postgresql://postgres:postgres@postgres:5432/mydb?schema=public")

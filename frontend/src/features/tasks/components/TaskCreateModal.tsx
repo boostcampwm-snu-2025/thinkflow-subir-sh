@@ -1,5 +1,5 @@
 import type { FormEvent } from "react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import clsx from "clsx";
 import { Modal } from "../../../shared/ui/Modal";
 import type { Priority } from "../../../shared/types";
@@ -14,6 +14,14 @@ interface TaskCreateModalProps {
     priority?: Priority | null;
   }) => void;
   submitting: boolean;
+
+  // 승격 등에서 자동 입력
+  initialValues?: {
+    title?: string;
+    content?: string | null;
+    dueDate?: string | null; 
+    priority?: Priority | "" | null;
+  };
 }
 
 export function TaskCreateModal({
@@ -21,11 +29,11 @@ export function TaskCreateModal({
   onClose,
   onSubmit,
   submitting,
+  initialValues,
 }: TaskCreateModalProps) {
   // @TODO: Reducer를 쓰는 게 낫지 않나? 
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
-
   const [dueDate, setDueDate] = useState("");           // YYYY-MM-DD
   const [priority, setPriority] = useState<Priority | "">("");
 
@@ -35,6 +43,16 @@ export function TaskCreateModal({
     setDueDate("");
     setPriority("");
   };
+
+  // ✅ open될 때마다 초기값 반영
+  useEffect(() => {
+    if (!open) return;
+
+    setTitle(initialValues?.title ?? "");
+    setContent(initialValues?.content ?? "");
+    setDueDate(initialValues?.dueDate ?? "");
+    setPriority((initialValues?.priority as Priority | "") ?? "");
+  }, [open, initialValues?.title, initialValues?.content, initialValues?.dueDate, initialValues?.priority]);
 
   const handleClose = () => {
     reset();

@@ -17,6 +17,10 @@ import type { Item, ItemType, Priority, Tag } from "../../../shared/types";
 import { TaskCreateModal } from "../components/TaskCreateModal";
 import { TaskList } from "../components/TaskList";
 import { useCreateTaskDetailMutation } from "../api/useTaskDetailMutations";
+import { useItemDeleteModal } from '../../items/api/useItemDeleteModal.js';
+import { ItemDeleteModal } from '../../items/components/ItemDeleteModal.js';
+import { RetrospectCreateModal } from "../components/RetrospectCreateModal";
+import { useAddTagToItem } from "../../items/api/useAddTagToItem";
 
 const TASKS_PER_PAGE = 5;
 
@@ -32,6 +36,7 @@ export function TaskPage() {
   const createTag = useCreateTagMutation();
   const updateTag = useUpdateTagMutation();
   const deleteTag = useDeleteTagMutation();
+  const del = useItemDeleteModal();
 
   const allTags = tagsData ?? [];
   const [selectedTagIds, setSelectedTagIds] = useState<number[]>([]);
@@ -50,6 +55,11 @@ export function TaskPage() {
 
   // 새 태스크 모달
   const [createModalOpen, setCreateModalOpen] = useState(false);
+
+  // 회고 생성용
+  const addTagToItem = useAddTagToItem();
+  const [retroOpen, setRetroOpen] = useState(false);
+  const [retroTarget, setRetroTarget] = useState<Item | null>(null);
 
   const handleToggleFilterTag = (tagId: number) => {
     setSelectedTagIds((prev) =>
@@ -102,6 +112,30 @@ export function TaskPage() {
     currentPage * TASKS_PER_PAGE,
   );
 
+  const openDeleteById = (id: number) => {
+    const item = filteredTasks.find((it) => it.id === id);
+    if (!item) return;
+    del.openModal(item);
+  };
+
+  const confirmDelete = async () => {
+    if (!del.target) return;
+    await deleteItem.mutateAsync({ id: del.target.id });
+    del.closeModal();
+  };
+
+  const openRetrospectById = (id: number) => {
+    const target = filteredTasks.find((it) => it.id === id);
+    if (!target) return;
+    setRetroTarget(target);
+    setRetroOpen(true);
+  };
+
+  const closeRetrospect = () => {
+    setRetroOpen(false);
+    setRetroTarget(null);
+  };
+
   const handleCreateTask = async (data: {
     title: string;
     content?: string | null;
@@ -120,8 +154,8 @@ export function TaskPage() {
     // 1) Item 먼저 생성
     const created = await createItem.mutateAsync(payload);
 
-    // 2) TaskDetail 정보가 있다면 별도 API로 생성
-    if (created && (data.dueDate || data.priority)) {
+    // 2) TaskDetail 별도 API로 생성
+    if (created) {
       await createTaskDetail.mutateAsync({
         itemId: created.id,
         dueDate: data.dueDate ?? null,
@@ -143,10 +177,6 @@ export function TaskPage() {
     };
   }) => {
     updateItem.mutate(input);
-  };
-
-  const handleDeleteTask = (id: number) => {
-    deleteItem.mutate({ id });
   };
 
   const handleOpenTagCreate = () => {
@@ -203,6 +233,25 @@ export function TaskPage() {
         },
       },
     );
+  };
+
+  const handleSaveRetrospect = async (data: { title: string; content: string }) => {
+    if (!retroTarget) return;
+
+    // 1) POST 생성
+    const created = await createItem.mutateAsync({
+      type: "POST",
+      title: data.title.trim(),
+      content: data.content, // 내용은 포맷 포함 그대로 저장
+    });
+
+    // 2) 태그 복사
+    const tagIds = retroTarget.tags?.map((t) => t.tagId) ?? [];
+    await Promise.all(
+      tagIds.map((tagId) => addTagToItem.mutateAsync({ itemId: created.id, tagId })),
+    );
+
+    closeRetrospect();
   };
 
   return (
@@ -291,10 +340,11 @@ export function TaskPage() {
               <TaskList
                 items={pagedTasks}
                 onUpdate={handleUpdateTask}
-                onDelete={handleDeleteTask}
+                onDelete={openDeleteById}
                 isUpdating={updateItem.isPending}
                 isDeleting={deleteItem.isPending}
                 onEditTags={handleOpenItemTagModal}
+                onCreateRetrospect={openRetrospectById}
               />
 
               {/* 페이지네이션 */}
@@ -344,6 +394,22 @@ export function TaskPage() {
         onClose={() => setCreateModalOpen(false)}
         onSubmit={handleCreateTask}
         submitting={createItem.isPending}
+      />
+
+      <RetrospectCreateModal
+        open={retroOpen}
+        task={retroTarget}
+        onClose={closeRetrospect}
+        onSubmit={handleSaveRetrospect}
+        submitting={createItem.isPending || addTagToItem.isPending}
+      />
+
+      <ItemDeleteModal
+        open={del.open}
+        item={del.target}
+        onClose={del.closeModal}
+        onConfirm={confirmDelete}
+        submitting={deleteItem.isPending}
       />
 
       <TagEditModal

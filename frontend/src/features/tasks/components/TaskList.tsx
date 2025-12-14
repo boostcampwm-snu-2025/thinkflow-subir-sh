@@ -17,6 +17,7 @@ interface TaskListProps {
   isUpdating: boolean;
   isDeleting: boolean;
   onEditTags: (item: Item) => void;
+  onCreateRetrospect: (id: number) => void;
 }
 
 export function TaskList({
@@ -26,6 +27,7 @@ export function TaskList({
   isUpdating,
   isDeleting,
   onEditTags,
+  onCreateRetrospect,
 }: TaskListProps) {
   if (items.length === 0) {
     return (
@@ -46,6 +48,7 @@ export function TaskList({
           isUpdating={isUpdating}
           isDeleting={isDeleting}
           onEditTags={onEditTags}
+          onCreateRetrospect={onCreateRetrospect}
         />
       ))}
     </div>

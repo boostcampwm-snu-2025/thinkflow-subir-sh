@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import clsx from 'clsx';
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, ArrowUpRight } from "lucide-react";
 import type { Item, ItemType } from '../../../shared/types';
 
 interface PostCardProps {
@@ -12,6 +12,7 @@ interface PostCardProps {
     type: ItemType;
   }) => void;
   onDelete: (id: number) => void;
+  onPromoteToTask: (id: number) => void;
   isUpdating: boolean;
   isDeleting: boolean;
   onEditTags: (item: Item) => void;
@@ -21,6 +22,7 @@ export function PostCard({
   item,
   onUpdate,
   onDelete,
+  onPromoteToTask,
   isUpdating,
   isDeleting,
   onEditTags,
@@ -84,9 +86,17 @@ export function PostCard({
             </button>
         </div>
 
-        {/* 수정/삭제 버튼 (아이콘) */}
+        {/* 아이콘 패널 */}
         {!isEditing && (
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => onPromoteToTask(item.id)}
+              className="rounded p-1 text-slate-600 hover:bg-slate-200"
+              title="태스크로 승격"
+            >
+              <ArrowUpRight size={16} />
+            </button>
+
             <button
               onClick={() => setIsEditing(true)}
               className="rounded p-1 text-slate-600 hover:bg-slate-200"
