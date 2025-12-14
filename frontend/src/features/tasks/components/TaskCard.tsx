@@ -29,6 +29,7 @@ interface TaskCardProps {
   isUpdating: boolean;
   isDeleting: boolean;
   onEditTags: (item: Item) => void;
+  onCreateRetrospect: (id: number) => void;
 }
 
 export function TaskCard({
@@ -38,6 +39,7 @@ export function TaskCard({
   isUpdating,
   isDeleting,
   onEditTags,
+  onCreateRetrospect,
 }: TaskCardProps) {
   const createDetail = useCreateTaskDetailMutation();
   const updateDetail = useUpdateTaskDetailMutation();
@@ -352,6 +354,15 @@ export function TaskCard({
             <span className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
               완료
             </span>
+          )}
+
+          {isDone && !isEditing && (
+            <button
+              onClick={() => onCreateRetrospect(item.id)}
+              className="rounded px-2 py-1 text-[11px] font-semibold text-emerald-700 hover:bg-emerald-100"
+            >
+              회고 생성
+            </button>
           )}
 
           {isEditing && (

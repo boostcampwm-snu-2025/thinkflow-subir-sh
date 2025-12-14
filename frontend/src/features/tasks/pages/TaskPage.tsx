@@ -19,6 +19,8 @@ import { TaskList } from "../components/TaskList";
 import { useCreateTaskDetailMutation } from "../api/useTaskDetailMutations";
 import { useItemDeleteModal } from '../../items/api/useItemDeleteModal.js';
 import { ItemDeleteModal } from '../../items/components/ItemDeleteModal.js';
+import { RetrospectCreateModal } from "../components/RetrospectCreateModal";
+import { useAddTagToItem } from "../../items/api/useAddTagToItem";
 
 const TASKS_PER_PAGE = 5;
 
@@ -53,6 +55,11 @@ export function TaskPage() {
 
   // 새 태스크 모달
   const [createModalOpen, setCreateModalOpen] = useState(false);
+
+  // 회고 생성용
+  const addTagToItem = useAddTagToItem();
+  const [retroOpen, setRetroOpen] = useState(false);
+  const [retroTarget, setRetroTarget] = useState<Item | null>(null);
 
   const handleToggleFilterTag = (tagId: number) => {
     setSelectedTagIds((prev) =>
@@ -115,6 +122,18 @@ export function TaskPage() {
     if (!del.target) return;
     await deleteItem.mutateAsync({ id: del.target.id });
     del.closeModal();
+  };
+
+  const openRetrospectById = (id: number) => {
+    const target = filteredTasks.find((it) => it.id === id);
+    if (!target) return;
+    setRetroTarget(target);
+    setRetroOpen(true);
+  };
+
+  const closeRetrospect = () => {
+    setRetroOpen(false);
+    setRetroTarget(null);
   };
 
   const handleCreateTask = async (data: {
@@ -216,6 +235,25 @@ export function TaskPage() {
     );
   };
 
+  const handleSaveRetrospect = async (data: { title: string; content: string }) => {
+    if (!retroTarget) return;
+
+    // 1) POST 생성
+    const created = await createItem.mutateAsync({
+      type: "POST",
+      title: data.title.trim(),
+      content: data.content, // 내용은 포맷 포함 그대로 저장
+    });
+
+    // 2) 태그 복사
+    const tagIds = retroTarget.tags?.map((t) => t.tagId) ?? [];
+    await Promise.all(
+      tagIds.map((tagId) => addTagToItem.mutateAsync({ itemId: created.id, tagId })),
+    );
+
+    closeRetrospect();
+  };
+
   return (
     <div className="space-y-4">
       {/* 프로젝트 타임라인 (placeholder) */}
@@ -306,6 +344,7 @@ export function TaskPage() {
                 isUpdating={updateItem.isPending}
                 isDeleting={deleteItem.isPending}
                 onEditTags={handleOpenItemTagModal}
+                onCreateRetrospect={openRetrospectById}
               />
 
               {/* 페이지네이션 */}
@@ -355,6 +394,14 @@ export function TaskPage() {
         onClose={() => setCreateModalOpen(false)}
         onSubmit={handleCreateTask}
         submitting={createItem.isPending}
+      />
+
+      <RetrospectCreateModal
+        open={retroOpen}
+        task={retroTarget}
+        onClose={closeRetrospect}
+        onSubmit={handleSaveRetrospect}
+        submitting={createItem.isPending || addTagToItem.isPending}
       />
 
       <ItemDeleteModal
