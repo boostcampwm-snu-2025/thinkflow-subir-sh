@@ -21,6 +21,7 @@ import { useItemDeleteModal } from '../../items/api/useItemDeleteModal.js';
 import { ItemDeleteModal } from '../../items/components/ItemDeleteModal.js';
 import { RetrospectCreateModal } from "../components/RetrospectCreateModal";
 import { useAddTagToItem } from "../../items/api/useAddTagToItem";
+import { useSaveRetrospectMutation } from "../api/retrospectWithGemini.js";
 
 const TASKS_PER_PAGE = 5;
 
@@ -37,6 +38,7 @@ export function TaskPage() {
   const updateTag = useUpdateTagMutation();
   const deleteTag = useDeleteTagMutation();
   const del = useItemDeleteModal();
+  const saveRetrospect = useSaveRetrospectMutation();
 
   const allTags = tagsData ?? [];
   const [selectedTagIds, setSelectedTagIds] = useState<number[]>([]);
@@ -238,18 +240,11 @@ export function TaskPage() {
   const handleSaveRetrospect = async (data: { title: string; content: string }) => {
     if (!retroTarget) return;
 
-    // 1) POST 생성
-    const created = await createItem.mutateAsync({
-      type: "POST",
+    await saveRetrospect.mutateAsync({
+      taskId: retroTarget.id,
       title: data.title.trim(),
-      content: data.content, // 내용은 포맷 포함 그대로 저장
+      content: data.content,
     });
-
-    // 2) 태그 복사
-    const tagIds = retroTarget.tags?.map((t) => t.tagId) ?? [];
-    await Promise.all(
-      tagIds.map((tagId) => addTagToItem.mutateAsync({ itemId: created.id, tagId })),
-    );
 
     closeRetrospect();
   };
@@ -401,7 +396,7 @@ export function TaskPage() {
         task={retroTarget}
         onClose={closeRetrospect}
         onSubmit={handleSaveRetrospect}
-        submitting={createItem.isPending || addTagToItem.isPending}
+        submitting={saveRetrospect.isPending}
       />
 
       <ItemDeleteModal

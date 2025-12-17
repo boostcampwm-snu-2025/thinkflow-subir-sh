@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { apiGet, apiPost } from "../../../shared/api/client";
+import { apiGet, apiPost, apiPut } from "../../../shared/api/client";
 import type { Item } from "../../../shared/types";
 
 export type DraftStatus = "EMPTY" | "PENDING" | "READY" | "FAILED";
@@ -43,5 +43,15 @@ export function useRetrospectStateQuery(taskId: number | null, enabled: boolean)
     enabled: enabled && taskId != null,
     queryFn: () => apiGet<RetrospectStateDTO>(`/items/${taskId}/retrospect`),
     refetchOnWindowFocus: false,
+  });
+}
+
+export function useSaveRetrospectMutation() {
+  return useMutation({
+    mutationFn: (args: { taskId: number; title: string; content: string }) =>
+      apiPut(`/items/${args.taskId}/retrospect`, {
+        title: args.title,
+        content: args.content,
+      }),
   });
 }
