@@ -3,17 +3,6 @@ import { ItemType, RetrospectDraftStatus } from "../generated/enums.js";
 import { geminiGenerateText } from "../llm/gemini.js";
 import { buildRetrospectPrompt } from "../llm/retrospect.prompt.js";
 
-const priorityLabel = (p: any) => {
-  switch (p) {
-    case "HIGH": return "높음";
-    case "MEDIUM": return "중간";
-    case "LOW": return "낮음";
-    default: return "없음";
-  }
-};
-
-const ymd = (d?: Date | null) => (d ? d.toISOString().slice(0, 10) : "없음");
-
 export const retrospectService = {
   async getState(taskId: number) {
     const task = await prisma.item.findUnique({
@@ -72,6 +61,10 @@ export const retrospectService = {
     // 이미 생성중이면 그대로 반환 (중복 호출 방지)
     if (!opts.force && existing?.status === RetrospectDraftStatus.PENDING) {
         return { status: "PENDING" as const, draft: existing };
+    }
+
+    if (!opts.force && existing && existing.status !== RetrospectDraftStatus.EMPTY) {
+      return { status: "EXISTS" as const, draft: existing };
     }
 
     // PENDING으로 먼저 박아두기(동시 요청 방지)

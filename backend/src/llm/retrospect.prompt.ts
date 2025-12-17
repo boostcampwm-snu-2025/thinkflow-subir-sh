@@ -25,17 +25,17 @@ export function buildRetrospectPrompt(input: {
 
 출력 형식 규칙:
 - 출력은 **오직 텍스트**만. JSON/코드펜스(\`\`\`) 금지.
+- ~함 체 사용.
 - 반드시 아래 2개 섹션 헤더를 포함:
-  [정리한 내용]
+  [내용]
   [추가 질문]
 - 각 섹션은 Markdown으로 작성, 짧은 문장/불릿 위주.
-- [정리한 내용]에는 요약, 타임라인(comments 기반), 배운 점, 다음 행동을 포함.
-- [추가 질문]에는 6~10개의 질문을 bullet로 작성.
+- [내용]에는 요약, 타임라인(comments 기반), 배운 점, 다음 행동을 포함.
+- [추가 질문]에는 3~10개의 질문을 bullet로 작성.
 - 질문은 사용자가 회고를 구체화하도록 유도(힘들었던 점, 의사결정, 트레이드오프, 검증, 다음 개선 등).
 
 입력 정보:
 [Task]
-taskId: ${input.taskId}
 title: ${input.title}
 content:
 ${taskContent}
@@ -44,7 +44,6 @@ meta:
 - 생성일: ${input.createdAt.toISOString().replace("T", " ").slice(0, 16)}
 - 기한: ${input.dueDate}
 - 우선순위: ${input.priority}
-- 상태: ${input.status}
 - 태그: ${tagsBlock}
 
 [Comments Timeline]
