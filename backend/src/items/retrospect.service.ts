@@ -1,5 +1,7 @@
 import { prisma } from "../prisma/index.js";
 import { ItemType, RetrospectDraftStatus } from "../generated/enums.js";
+import { geminiGenerateText } from "../llm/gemini.js";
+import { buildRetrospectPrompt } from "../llm/retrospect.prompt.js";
 
 const priorityLabel = (p: any) => {
   switch (p) {
@@ -11,41 +13,6 @@ const priorityLabel = (p: any) => {
 };
 
 const ymd = (d?: Date | null) => (d ? d.toISOString().slice(0, 10) : "없음");
-
-function buildTemplate(task: {
-  title: string;
-  content?: string | null;
-  tags: { tag: { name: string } }[];
-  taskDetail: { dueDate?: Date | null; priority?: any | null; status: any };
-}) {
-  const due = ymd(task.taskDetail.dueDate);
-  const pri = priorityLabel(task.taskDetail.priority);
-  const status = task.taskDetail.status;
-
-  const tagNames =
-    task.tags?.map((t) => t.tag.name).filter(Boolean).map((n) => `#${n}`).join(" ") || "(없음)";
-
-  const original = (task.content ?? "").trim() || "(내용 없음)";
-
-  const draftTitle = `회고: ${task.title}`;
-  const draftContent = [
-    `기한: ${due}, 우선순위: ${pri}, 상태: ${status}`,
-    `태그: ${tagNames}`,
-    ``,
-    `---`,
-    `작업 내용`,
-    original,
-    ``,
-    `---`,
-    `회고`,
-    `- 잘한 점:`,
-    `- 아쉬운 점:`,
-    `- 다음 행동:`,
-    ``,
-  ].join("\n");
-
-  return { draftTitle, draftContent };
-}
 
 export const retrospectService = {
   async getState(taskId: number) {
@@ -77,60 +44,105 @@ export const retrospectService = {
   },
 
   // 초안이 없으면 템플릿으로 만들어 READY로 반환 (LLM 붙일 땐 여기서 PENDING으로 만들고 워커가 채움)
-  async ensureDraft(taskId: number) {
+  async ensureDraft(taskId: number, opts: { force?: boolean } = {}) {
     const task = await prisma.item.findUnique({
-      where: { id: taskId },
-      include: {
+        where: { id: taskId },
+        include: {
         tags: { include: { tag: true } },
-        taskDetail: {
-          include: { retrospectDraft: true },
+        taskDetail: { include: { retrospectDraft: true } },
         },
-      },
     });
 
     if (!task) throw new Error("NOT_FOUND");
     if (task.type !== ItemType.TASK) throw new Error("NOT_A_TASK");
     if (!task.taskDetail) throw new Error("TASK_DETAIL_MISSING");
 
-    // 이미 저장된 회고가 있으면, draft를 새로 만들지 않음
+    // 이미 회고 포스트가 저장돼 있으면 초안 생성 불필요
     if (task.taskDetail.retrospectPostId) {
-      return { status: "HAS_POST" as const, draft: task.taskDetail.retrospectDraft ?? null };
+        return { status: "HAS_POST" as const, draft: task.taskDetail.retrospectDraft ?? null };
     }
 
     const existing = task.taskDetail.retrospectDraft;
-    if (existing && existing.status !== RetrospectDraftStatus.EMPTY) {
-      return { status: "EXISTS" as const, draft: existing };
+
+    // 캐시된 READY가 있고 force 아니면 그대로 반환
+    if (!opts.force && existing?.status === RetrospectDraftStatus.READY) {
+        return { status: "CACHED" as const, draft: existing };
     }
 
-    const { draftTitle, draftContent } = buildTemplate({
-      title: task.title,
-      content: task.content,
-      tags: task.tags,
-      taskDetail: {
-        dueDate: task.taskDetail.dueDate,
-        priority: task.taskDetail.priority,
-        status: task.taskDetail.status,
-      },
-    });
+    // 이미 생성중이면 그대로 반환 (중복 호출 방지)
+    if (!opts.force && existing?.status === RetrospectDraftStatus.PENDING) {
+        return { status: "PENDING" as const, draft: existing };
+    }
 
-    const draft = await prisma.retrospectDraft.upsert({
-      where: { taskId },
-      update: {
-        status: RetrospectDraftStatus.READY,
-        draftTitle,
-        draftContent,
+    // PENDING으로 먼저 박아두기(동시 요청 방지)
+    await prisma.retrospectDraft.upsert({
+        where: { taskId },
+        update: {
+        status: RetrospectDraftStatus.PENDING,
         errorMessage: null,
-      },
-      create: {
+        },
+        create: {
         taskId,
-        status: RetrospectDraftStatus.READY,
-        draftTitle,
-        draftContent,
-      },
+        status: RetrospectDraftStatus.PENDING,
+        },
     });
 
-    return { status: "CREATED" as const, draft };
-  },
+    // comments 타임라인(최근 30개, 오래된→최신)
+    const comments = await prisma.comment.findMany({
+        where: { itemId: taskId },
+        orderBy: { createdAt: "asc" },
+        take: 30,
+    });
+
+    const dueDate = task.taskDetail.dueDate ? task.taskDetail.dueDate.toISOString().slice(0, 10) : "없음";
+    const priority =
+        task.taskDetail.priority === "HIGH" ? "높음"
+        : task.taskDetail.priority === "MEDIUM" ? "중간"
+        : task.taskDetail.priority === "LOW" ? "낮음"
+        : "없음";
+
+    const prompt = buildRetrospectPrompt({
+        taskId,
+        title: task.title,
+        content: task.content ?? null,
+        createdAt: task.createdAt,
+        dueDate,
+        priority,
+        status: String(task.taskDetail.status),
+        tags: (task.tags ?? []).map((t) => `#${t.tag.name}`),
+        comments: comments.map((c) => ({
+        at: c.createdAt.toISOString().replace("T", " ").slice(0, 16),
+        content: c.content,
+        })),
+    });
+
+    try {
+        const text = await geminiGenerateText(prompt);
+
+        const saved = await prisma.retrospectDraft.update({
+        where: { taskId },
+        data: {
+            status: RetrospectDraftStatus.READY,
+            draftTitle: `회고: ${task.title}`,
+            draftContent: text, // ✅ Gemini raw 텍스트 그대로 저장
+            errorMessage: null,
+        },
+        });
+
+        return { status: "READY" as const, draft: saved };
+    } catch (e: any) {
+        const saved = await prisma.retrospectDraft.update({
+        where: { taskId },
+        data: {
+            status: RetrospectDraftStatus.FAILED,
+            errorMessage: String(e?.message ?? "GEMINI_FAILED"),
+        },
+        });
+
+        // FE가 실패 UI 띄우기 쉽게 200으로 내려주게끔 service는 결과 반환
+        return { status: "FAILED" as const, draft: saved };
+    }
+    },
 
   // 저장: 없으면 POST 생성 + 연결 + 태그 복사 / 있으면 해당 POST 업데이트
   async save(taskId: number, input: { title: string; content: string }) {

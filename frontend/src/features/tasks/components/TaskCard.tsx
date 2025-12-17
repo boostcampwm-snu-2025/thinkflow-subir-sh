@@ -65,12 +65,12 @@ export function TaskCard({
   });
 
   const dueLabel =
-    item.taskDetail?.dueDate != null
-      ? new Date(item.taskDetail.dueDate).toLocaleDateString("ko-KR", {
+    item.taskDetail?.dueDate == null
+      ? "기한 없음"
+      : new Date(item.taskDetail.dueDate).toLocaleDateString("ko-KR", {
           month: "2-digit",
           day: "2-digit",
-        })
-      : "기한 없음";
+        });
 
   const priority = item.taskDetail?.priority ?? null;
   const currentStatus: TaskStatus = item.taskDetail?.status ?? "READY";

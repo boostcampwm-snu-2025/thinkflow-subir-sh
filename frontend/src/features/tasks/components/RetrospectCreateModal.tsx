@@ -37,8 +37,20 @@ export function RetrospectCreateModal({
 
   const template = useMemo(() => {
     if (!task) return "";
-
-    const due = task.taskDetail?.dueDate ?? null;
+    
+    const start = new Date(task.createdAt).toLocaleDateString("ko-KR", {
+          year: "2-digit",
+          month: "2-digit",
+          day: "2-digit",
+        });
+    const due =
+    task.taskDetail?.dueDate == null
+      ? "기한 없음"
+      : new Date(task.taskDetail.dueDate).toLocaleDateString("ko-KR", {
+          year: "2-digit",
+          month: "2-digit",
+          day: "2-digit",
+        });
     const pri = task.taskDetail?.priority ?? null;
 
     const tagNames =
@@ -51,12 +63,12 @@ export function RetrospectCreateModal({
     const original = (task.content ?? "").trim();
 
     return [
-      `기한: ${due ?? "없음"}, 우선순위: ${priorityLabel(pri)}`,
+      `기한: ${start} ~ ${due ?? "없음"}, 우선순위: ${priorityLabel(pri)}`,
       `태그: ${tagNames}`,
       ``,
       `---`,
       `작업 내용`,
-      original ? original : "(내용 없음)",
+      original || "(내용 없음)",
       ``,
       `---`,
       `회고`,
