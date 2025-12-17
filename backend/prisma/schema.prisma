@@ -32,6 +32,9 @@ model Item {
   taskDetail TaskDetail?
   comments   Comment[]
   tags       ItemTag[]
+
+  // ✅ 추가: 이 Item이 어떤 TaskDetail의 retrospectPost로 연결되어 있는지(역참조)
+  retrospectOf TaskDetail? @relation("RetrospectPost")
 }
 
 model TaskDetail {
@@ -41,6 +44,13 @@ model TaskDetail {
   status     TaskStatus @default(READY)
   repeatRule Json?
   priority   Priority?
+
+  // ✅ 추가: 회고 포스트(POST Item) 1:1 연결
+  retrospectPostId Int? @unique
+  retrospectPost   Item? @relation("RetrospectPost", fields: [retrospectPostId], references: [id], onDelete: SetNull)
+
+  // ✅ 추가: 초안(LLM 전/후) 1:1
+  retrospectDraft RetrospectDraft?
 
   item       Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
 }
@@ -97,4 +107,30 @@ enum TaskStatus {
   IN_PROGRESS
   DONE
   PENDING
+}
+
+enum RetrospectDraftStatus {
+  EMPTY
+  PENDING   // 생성 요청 후 대기
+  READY     // 초안 생성 완료
+  FAILED
+}
+
+model RetrospectDraft {
+  // taskDetail.itemId 와 1:1
+  taskId Int @id
+
+  status RetrospectDraftStatus @default(EMPTY)
+
+  // ✅ 유저가 편집할 수 있는 초안 텍스트
+  draftTitle   String?
+  draftContent String?
+
+  // (선택) 나중에 디버깅용으로 최소한만
+  errorMessage String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  task TaskDetail @relation(fields: [taskId], references: [itemId], onDelete: Cascade)
 }

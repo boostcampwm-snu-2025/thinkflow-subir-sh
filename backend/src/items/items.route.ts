@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { itemsController } from "./items.controller.js";
 import { taskDetailController } from "./taskDetail.controller.js";
+import { retrospectController } from "./retrospect.controller.js";
 
 const router = Router();
 
@@ -123,5 +124,8 @@ router.patch("/:id/task-detail", taskDetailController.update);
  */
 router.delete("/:id/task-detail", taskDetailController.delete);
 
+router.get("/:id/retrospect", retrospectController.get);
+router.post("/:id/retrospect/draft", retrospectController.ensureDraft);
+router.put("/:id/retrospect", retrospectController.save);
 
 export default router;

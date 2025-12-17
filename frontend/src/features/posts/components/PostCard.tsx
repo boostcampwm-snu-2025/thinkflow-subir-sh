@@ -129,7 +129,7 @@ export function PostCard({
               onChange={(e) => setEditTitle(e.target.value)}
             />
             <textarea
-              className="h-24 w-full resize-none rounded-md border border-slate-300 bg-white px-2 py-1 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-400"
+              className="w-full h-[calc(100%-40px)] resize-none rounded-md border border-slate-300 bg-white px-2 py-1 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-400"
               value={editContent}
               onChange={(e) => setEditContent(e.target.value)}
             />
