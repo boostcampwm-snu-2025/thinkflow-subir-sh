@@ -48,6 +48,8 @@ https://github.com/user-attachments/assets/00ba7836-5cf9-47ef-8d35-a7abfd85c3c7
 1. `/backend/.env` 생성
    ```env
    DATABASE_URL="postgresql://postgres:postgres@postgres:5432/mydb?schema=public"
+   GEMINI_API_KEY=[자신의 키 입력]
+   GEMINI_MODEL=["gemini-2.5-flash-lite" 등 사용할 모델명 입력]
    ```
 2. 컨테이너 빌드
    ```bash

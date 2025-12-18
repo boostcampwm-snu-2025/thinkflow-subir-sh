@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useItemsQuery } from "../../items/api/useItemsQuery";
 import {
   useTagsQuery,
@@ -22,6 +22,7 @@ import { ItemDeleteModal } from '../../items/components/ItemDeleteModal.js';
 import { RetrospectCreateModal } from "../components/RetrospectCreateModal";
 import { useAddTagToItem } from "../../items/api/useAddTagToItem";
 import { useSaveRetrospectMutation } from "../api/retrospectWithGemini.js";
+import { TaskCalendar } from "../components/TaskCalendar";
 
 const TASKS_PER_PAGE = 5;
 
@@ -45,6 +46,7 @@ export function TaskPage() {
   const [searchText, setSearchText] = useState("");
   const [sortKey, setSortKey] = useState<TaskSortKey>("created_desc");
   const [page, setPage] = useState(1);
+  const [focusTaskId, setFocusTaskId] = useState<number | null>(null);
 
   // 태그 CRUD 모달 상태
   const [tagModalMode, setTagModalMode] = useState<"create" | "edit">("create");
@@ -113,6 +115,33 @@ export function TaskPage() {
     (currentPage - 1) * TASKS_PER_PAGE,
     currentPage * TASKS_PER_PAGE,
   );
+
+  const focusTaskInList = (taskId: number) => {
+    const idx = filteredTasks.findIndex((it) => it.id === taskId);
+    if (idx < 0) return;
+
+    const nextPage = Math.floor(idx / TASKS_PER_PAGE) + 1;
+    setPage(nextPage);
+    setFocusTaskId(taskId);
+
+    document
+      .getElementById("task-list-panel")
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  useEffect(() => {
+    if (!focusTaskId) return;
+
+    const raf = requestAnimationFrame(() => {
+      const el = document.getElementById(`task-${focusTaskId}`);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        setFocusTaskId(null);
+      }
+    });
+
+    return () => cancelAnimationFrame(raf);
+  }, [focusTaskId, currentPage]);
 
   const openDeleteById = (id: number) => {
     const item = filteredTasks.find((it) => it.id === id);
@@ -265,16 +294,11 @@ export function TaskPage() {
       <section className="grid gap-4 md:grid-cols-[minmax(0,1.2fr)_minmax(0,1.8fr)]">
         {/* 캘린더 placeholder */}
         <div className="rounded-2xl bg-white p-4 shadow-sm md:p-6">
-          <h2 className="mb-3 text-sm font-semibold text-slate-900">
-            캘린더
-          </h2>
-          <div className="flex h-64 items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50 text-xs text-slate-400">
-            캘린더 뷰는 나중에 구현 예정입니다.
-          </div>
+          <TaskCalendar tasks={filteredTasks} onClickTask={focusTaskInList} />
         </div>
 
         {/* 할 일 목록 */}
-        <div className="rounded-2xl bg-white p-4 shadow-sm md:p-6">
+        <div id="task-list-panel" className="rounded-2xl bg-white p-4 shadow-sm md:p-6">
           {/* 헤더 영역: 검색, 태그, 정렬, 새 태스크 */}
           <div className="mb-4 flex flex-col gap-3">
             <div className="flex items-center justify-between gap-2">

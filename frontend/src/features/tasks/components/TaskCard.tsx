@@ -157,6 +157,7 @@ export function TaskCard({
 
   return (
     <article
+      id={`task-${item.id}`}
       className={clsx(
         "flex h-full flex-col rounded-2xl border p-4 shadow-sm transition-colors",
 
